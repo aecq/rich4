@@ -29,5 +29,6 @@
 // 输入 src: 经过压缩的数据
 // 输入 bufsz: dst指向的缓冲区大小
 // 输出 dst: 解压后的数据
+// 支持部分解压，即该函数只会写入bufsz字节至dst，即使解压未结束
 void mkf_decompress(void *dst, const void *src, size_t bufsz)
 ``
