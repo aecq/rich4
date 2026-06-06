@@ -3,6 +3,7 @@
 #include "core/types/ResourceHeader.h"
 #include "core/types/SPRSMPHeader.h"
 #include "core/utils/Cache.h"
+#include "core/utils/MediaPlayer.h"
 #include "gui/main_window.h"
 #include <QApplication>
 #include <QSplitter>
@@ -28,10 +29,12 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QToolBar>
+#include <qitemselectionmodel.h>
 #include <qlogging.h>
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     setupUI();
+    setupConnections();
     setWindowTitle("MKF File Viewer");
     resize(500, 600);
 }
@@ -57,6 +60,13 @@ void MainWindow::createMenuBar() {
     QAction* openAction = fileMenu->addAction("&Open MKF...");
     openAction->setShortcut(QKeySequence::Open);
     connect(openAction, &QAction::triggered, this, &MainWindow::openFile);
+
+    QMenu* showMenu = menuBar()->addMenu("&Show");
+
+    playAudioAction = showMenu->addAction("Play Audio");
+    playAudioAction->setShortcut(QKeySequence::Refresh);
+    connect(playAudioAction, &QAction::triggered, this, &MainWindow::playAudio);
+    playAudioAction->setEnabled(false);
 }
 
 void MainWindow::createToolBar() {
@@ -64,6 +74,15 @@ void MainWindow::createToolBar() {
     
     QAction* openAction = toolBar->addAction("Open");
     connect(openAction, &QAction::triggered, this, &MainWindow::openFile);
+
+    toolBar->addSeparator();
+
+    toolBar->addAction(playAudioAction);
+}
+
+void MainWindow::setupConnections() {
+    connect(treeView->selectionModel(), &QItemSelectionModel::currentChanged,
+            this, &MainWindow::treeSelectionChanged);
 }
 
 void MainWindow::openFile() {
@@ -77,6 +96,29 @@ void MainWindow::openFile() {
         cache->init(filepath);
     loadFileTree();
     statusBar()->showMessage(QString("Loaded %1 resource(s): %2").arg(cache->n()).arg(filepath));
+}
+
+void MainWindow::playAudio() {
+    QItemSelectionModel* selectionModel = treeView->selectionModel();
+    QModelIndex index = selectionModel->currentIndex();
+    if (!index.isValid()) {
+        return;
+    }
+    // #region depth
+    int depth = 0;
+    QModelIndex temp = index;
+    while (temp.parent().isValid()) {
+        temp = temp.parent();
+        depth++;
+    }
+    // #endregion depth
+    if (depth == 1 && cache->getSignature(index.row()).startsWith("RIFF")) {
+        statusBar()->showMessage("Playing audio at index:" + QString::number(index.row()));
+        QByteArray data = cache->getResource(index.row());
+        MediaPlayer::instance().play(data);
+    } else {
+        statusBar()->showMessage("Please select an audio resource.");
+    }
 }
 
 void MainWindow::loadFileTree() {
@@ -131,4 +173,35 @@ void MainWindow::loadFileTree() {
         rootItem->appendRow(row);
     }
     treeView->expandToDepth(0);
+}
+
+// 更新播放按钮状态
+void MainWindow::updatePlayActionState() {
+    QItemSelectionModel* selectionModel = treeView->selectionModel();
+    QModelIndex index = selectionModel->currentIndex();
+
+    // 默认不可用
+    bool enable = false;
+
+    if (index.isValid()) {
+        // 计算深度
+        int depth = 0;
+        QModelIndex temp = index;
+        while (temp.parent().isValid()) {
+            temp = temp.parent();
+            depth++;
+        }
+
+        // 判断条件
+        if (depth == 1 && cache->getSignature(index.row()).startsWith("RIFF")) {
+            enable = true;
+        }
+    }
+
+    // 设置按钮是否可用
+    playAudioAction->setEnabled(enable);
+}
+
+void MainWindow::treeSelectionChanged(const QModelIndex& current, const QModelIndex& previous) {
+    updatePlayActionState();
 }
