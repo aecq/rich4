@@ -18,9 +18,7 @@ MediaPlayer &MediaPlayer::instance()
 void MediaPlayer::play(QByteArray wavData)
 {
     stop();
-    if (m_buffer->isOpen()) {
-        m_buffer->close();
-    }
+    m_buffer = new QBuffer(this);
     m_buffer->setData(wavData);
     m_buffer->open(QIODevice::ReadOnly);
     m_player->setSourceDevice(m_buffer);
@@ -30,6 +28,11 @@ void MediaPlayer::play(QByteArray wavData)
 void MediaPlayer::stop()
 {
     m_player->stop();
+    m_player->setSourceDevice(nullptr);
+    if (m_buffer) {
+        m_buffer->deleteLater();
+        m_buffer = nullptr;
+    }
 }
 
 void MediaPlayer::setVolume(qreal vol)
