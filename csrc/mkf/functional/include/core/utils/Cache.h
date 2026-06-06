@@ -13,7 +13,7 @@ public:
     void clear();
     ResourceHeader getHeader(int index);
     QString getSignature(int index);
-    void getResource(int index, QByteArray& data);
+    QByteArray getResource(int index);
     size_t n();
     QString getFilename();
 

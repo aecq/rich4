@@ -105,8 +105,7 @@ void MainWindow::loadFileTree() {
         QList<QStandardItem*> row;
 
         if (sig.startsWith("SPR") || sig.startsWith("SMP")) {
-            QByteArray bytes;
-            cache->getResource(i, bytes);
+            QByteArray bytes = cache->getResource(i);
             SPRSMPHeader header = parseSPRSMPHeader(bytes);
             row << new QStandardItem(QString::number(i))
                 << new QStandardItem(QString("%1 (%2)")

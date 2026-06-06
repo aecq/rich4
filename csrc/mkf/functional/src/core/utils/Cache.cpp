@@ -61,10 +61,11 @@ QString Cache::getSignature(int index) {
     return QString("....");
 }
 
-void Cache::getResource(int index, QByteArray& data) {
+QByteArray Cache::getResource(int index) {
+    QByteArray data;
     if (isLoaded[index]) {
         data = byteArrays[index];
-        return;
+        return data;
     }
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -78,6 +79,7 @@ void Cache::getResource(int index, QByteArray& data) {
     }
     byteArrays[index] = data;
     isLoaded[index] = true;
+    return data;
 }
 
 size_t Cache::n() {
