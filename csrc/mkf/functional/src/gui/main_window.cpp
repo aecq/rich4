@@ -131,8 +131,8 @@ void MainWindow::openGraphicsTextWindow()
 {
     if (!graphicsTextWindow) {
         graphicsTextWindow = new GraphicsTextWindow(this);
+        connect(this, &MainWindow::treeRowChanged, graphicsTextWindow, &GraphicsTextWindow::onTreeRowChanged);
     }
-    connect(this, &MainWindow::treeRowChanged, graphicsTextWindow, &GraphicsTextWindow::onTreeRowChanged);
     graphicsTextWindow->show();
     graphicsTextWindow->raise();
 }

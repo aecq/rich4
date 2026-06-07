@@ -149,6 +149,8 @@ QString GraphicsTextWindow::paletteHTML(const QModelIndex &index, Cache* cache) 
 }
 
 void GraphicsTextWindow::onTreeRowChanged(const QModelIndex &index) {
+    gallery->clear();
+    textEdit->clear();
     if (!index.isValid()) {
         return;
     }
