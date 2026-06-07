@@ -11,7 +11,7 @@
 
 GraphicsTextWindow::GraphicsTextWindow(MainWindow* mainWindow) : m_mainWindow(mainWindow) {
     setupUI();
-    resize(800, 800);
+    resize(1000, 600);
 }
 
 GraphicsTextWindow::~GraphicsTextWindow() {
@@ -48,10 +48,12 @@ void GraphicsTextWindow::setupUI() {
 
     // 6. 左侧：你可以放图形视图、按钮、列表等
     gallery = new QListWidget(leftPanel);
+    gallery->setViewMode(QListWidget::IconMode);
+    gallery->setIconSize(QSize(1280, 960));
     leftLayout->addWidget(gallery);
 
     // 7. 分割器初始宽度
-    mainSplitter->setSizes({300, 300});
+    mainSplitter->setSizes({1500, 500});
 }
 
 void GraphicsTextWindow::update(const QModelIndex &index) {
@@ -62,26 +64,25 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
         depth++;
     }
     Cache* cache = m_mainWindow->getCache();
-    // QString sig = cache->getSignature(index.row());
     // Image
     gallery->clear();
     if (depth == 1) {
-        std::vector<QImage> images = parseImages(cache->getResource(index.row()));
         QString sig = cache->getSignature(index.row());
         if (sig.startsWith("SPR") || sig.startsWith("SMP")) {
+            std::vector<QImage> images = parseImages(cache->getResource(index.row()));
             for (size_t i = 0; i < images.size(); i++) {
                 if (!images[i].isNull()) {
                     QPixmap pixmap = QPixmap::fromImage(images[i]);
                     QIcon icon(pixmap);
                     QListWidgetItem* item = new QListWidgetItem(
+                        icon,
                         QString("%1: %2x%3")
                             .arg(i)
                             .arg(images[i].width())
                             .arg(images[i].height()),
                         gallery
                     );
-                    item->setIcon(icon);
-                    item->setSizeHint(QSize(100, 100));
+                    item->setTextAlignment(Qt::AlignCenter);
                     gallery->addItem(item);
                 }
             }
@@ -89,20 +90,20 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
     } else if (depth == 2) {
         QModelIndex parent = index.parent();
         QString sig = cache->getSignature(parent.row());
-        std::vector<QImage> images = parseImages(cache->getResource(parent.row()));
-        if ((sig.startsWith("SPR") || sig.startsWith("SMP")) && index.row() < images.size()) {
-            if (!images[index.row()].isNull()) {
+        if ((sig.startsWith("SPR") || sig.startsWith("SMP"))) {
+            std::vector<QImage> images = parseImages(cache->getResource(parent.row()));
+            if (index.row() < images.size() && !images[index.row()].isNull()) {
                 QPixmap pixmap = QPixmap::fromImage(images[index.row()]);
                 QIcon icon(pixmap);
                 QListWidgetItem* item = new QListWidgetItem(
+                    icon,
                     QString("%1: %2x%3")
                         .arg(index.row())
                         .arg(images[index.row()].width())
                         .arg(images[index.row()].height()),
                     gallery
                 );
-                item->setIcon(icon);
-                item->setSizeHint(QSize(100, 100));
+                item->setTextAlignment(Qt::AlignCenter);
                 gallery->addItem(item);
             }
         }
