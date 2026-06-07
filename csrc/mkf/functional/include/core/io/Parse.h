@@ -228,10 +228,13 @@ static inline std::vector<QImage> parseImages(const QByteArray& bytes, int offse
 //  parseBig5Simple(bytes, size): 从 const QByteArray& bytes 中解析 Big5 编码的文本
 // ====================
 static inline QString parseBig5Simple(const QByteArray& bytes, size_t size) {
-    int wideChars = MultiByteToWideChar(950, 0, bytes, size, NULL, 0);
+    if (size <= 0 || bytes == nullptr) {
+        return QString();
+    }
+    int wideChars = MultiByteToWideChar(950, MB_ERR_INVALID_CHARS, bytes, size, NULL, 0);
     if (wideChars > 0) {
         QVector<wchar_t> wideBuffer(wideChars);
-        MultiByteToWideChar(950, 0, bytes, size, wideBuffer.data(), wideChars);
+        MultiByteToWideChar(950, MB_ERR_INVALID_CHARS, bytes, size, wideBuffer.data(), wideChars);
         return QString::fromWCharArray(wideBuffer.data(), wideChars);
     }
     return QString();
@@ -251,8 +254,7 @@ static inline QString parseBig5(const QByteArray& bytes) {
     QString output;
 
     if (bytes.isEmpty()) {
-        qDebug("No data available");
-        return output;
+        return QString("(空)");
     }
     
     int lineStart = 0;
@@ -310,7 +312,7 @@ static inline QString parseBig5(const QByteArray& bytes) {
     }
     
     if (output.isEmpty()) {
-        return QString("(空)");
+        return QString("(无可识别文本)");
     } else {
         return output;
     }
