@@ -8,7 +8,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 COMPONENTS Core Gui Widgets Multimedia REQUIRED)
+find_package(Qt6 COMPONENTS Core Core5Compat Gui Widgets Multimedia REQUIRED)
 
 set(SOURCES
     src/core/utils/Cache.cpp
@@ -34,4 +34,4 @@ target_include_directories(MkfViewer3 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_link_libraries(MkfViewer3 Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Multimedia)
+target_link_libraries(MkfViewer3 Qt6::Core Qt6::Core5Compat Qt6::Gui Qt6::Widgets Qt6::Multimedia)

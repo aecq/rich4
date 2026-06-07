@@ -13,6 +13,7 @@
 #include <QFile>
 #include <QImage>
 #include <QPixmap>
+#include <QTextCodec>
 
 const int PALETTE_SIZE = 256;
 
@@ -231,13 +232,8 @@ static inline QString parseBig5Simple(const QByteArray& bytes, size_t size) {
     if (size <= 0 || bytes == nullptr) {
         return QString();
     }
-    int wideChars = MultiByteToWideChar(950, MB_ERR_INVALID_CHARS, bytes, size, NULL, 0);
-    if (wideChars > 0) {
-        QVector<wchar_t> wideBuffer(wideChars);
-        MultiByteToWideChar(950, MB_ERR_INVALID_CHARS, bytes, size, wideBuffer.data(), wideChars);
-        return QString::fromWCharArray(wideBuffer.data(), wideChars);
-    }
-    return QString();
+    QTextCodec* codec = QTextCodec::codecForName("Big5");
+    return codec->toUnicode(bytes.left(size));
 }
 
 // ====================
