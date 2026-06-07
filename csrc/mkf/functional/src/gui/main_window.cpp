@@ -87,6 +87,7 @@ void MainWindow::createToolBar() {
 }
 
 void MainWindow::setupConnections() {
+    connect(this, &MainWindow::destroyed, qApp, &QApplication::quit);
     connect(treeView->selectionModel(), &QItemSelectionModel::currentChanged,
             this, &MainWindow::treeSelectionChanged);
 }

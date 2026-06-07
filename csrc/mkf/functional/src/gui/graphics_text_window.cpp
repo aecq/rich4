@@ -9,7 +9,7 @@
 #include <QVBoxLayout>
 #include <qabstractitemmodel.h>
 
-GraphicsTextWindow::GraphicsTextWindow(MainWindow* mainWindow) : m_mainWindow(mainWindow) {
+GraphicsTextWindow::GraphicsTextWindow(MainWindow* mainWindow) : QWidget(mainWindow, Qt::Window), m_mainWindow(mainWindow) {
     setupUI();
     resize(1000, 600);
 }
