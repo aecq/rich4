@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include <QStandardItemModel>
 #include <QTreeView>
+class GraphicsTextWindow;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -13,10 +14,12 @@ public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
     void treeSelectionChanged(const QModelIndex& current, const QModelIndex& previous);
+    Cache* getCache() { return cache; }
     
 private slots:
     void openFile();
     void playAudio();
+    void openGraphicsTextWindow();
     
 private:
     void setupUI();
@@ -33,4 +36,9 @@ private:
     QStandardItemModel* treeModel = nullptr;
 
     QAction* playAudioAction = nullptr;
+
+    GraphicsTextWindow* graphicsTextWindow = nullptr;
+
+signals:
+    void treeRowChanged(const QModelIndex &index);
 };

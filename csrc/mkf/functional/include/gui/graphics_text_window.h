@@ -1,0 +1,29 @@
+#pragma once
+
+#include "core/utils/Cache.h"
+#include <QListWidget>
+#include <QModelIndex>
+#include <QTextEdit>
+#include <QWidget>
+class MainWindow;
+
+class GraphicsTextWindow : public QWidget {
+    Q_OBJECT
+public:
+    explicit GraphicsTextWindow(MainWindow* mainWindow);
+    ~GraphicsTextWindow();
+
+private:
+    void setupUI();
+    void update(const QModelIndex &index);
+    QString paletteHTML(const QModelIndex &index, Cache* cache);
+
+public slots:
+    void onTreeRowChanged(const QModelIndex &index);
+
+private:
+    MainWindow* m_mainWindow;
+
+    QTextEdit* textEdit;
+    QListWidget* gallery;
+};

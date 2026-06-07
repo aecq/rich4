@@ -1,9 +1,9 @@
-#include "gui/main_window.h"
 #include "core/io/Parse.h"
 #include "core/types/ResourceHeader.h"
 #include "core/types/SPRSMPHeader.h"
 #include "core/utils/Cache.h"
 #include "core/utils/MediaPlayer.h"
+#include "gui/graphics_text_window.h"
 #include "gui/main_window.h"
 #include <QApplication>
 #include <QSplitter>
@@ -67,6 +67,9 @@ void MainWindow::createMenuBar() {
     playAudioAction->setShortcut(QKeySequence::Refresh);
     connect(playAudioAction, &QAction::triggered, this, &MainWindow::playAudio);
     playAudioAction->setEnabled(false);
+
+    QAction* graphicsTextAction = showMenu->addAction("Graphics Text");
+    connect(graphicsTextAction, &QAction::triggered, this, &MainWindow::openGraphicsTextWindow);
 }
 
 void MainWindow::createToolBar() {
@@ -78,6 +81,9 @@ void MainWindow::createToolBar() {
     toolBar->addSeparator();
 
     toolBar->addAction(playAudioAction);
+
+    QAction* graphicsTextAction = toolBar->addAction("Graphics Text");
+    connect(graphicsTextAction, &QAction::triggered, this, &MainWindow::openGraphicsTextWindow);
 }
 
 void MainWindow::setupConnections() {
@@ -119,6 +125,16 @@ void MainWindow::playAudio() {
     } else {
         statusBar()->showMessage("Please select an audio resource.");
     }
+}
+
+void MainWindow::openGraphicsTextWindow()
+{
+    if (!graphicsTextWindow) {
+        graphicsTextWindow = new GraphicsTextWindow(this);
+    }
+    connect(this, &MainWindow::treeRowChanged, graphicsTextWindow, &GraphicsTextWindow::onTreeRowChanged);
+    graphicsTextWindow->show();
+    graphicsTextWindow->raise();
 }
 
 void MainWindow::loadFileTree() {
@@ -204,4 +220,5 @@ void MainWindow::updatePlayActionState() {
 
 void MainWindow::treeSelectionChanged(const QModelIndex& current, const QModelIndex& previous) {
     updatePlayActionState();
+    emit treeRowChanged(current);
 }
