@@ -133,7 +133,14 @@ void MainWindow::openGraphicsTextWindow()
         graphicsTextWindow = new GraphicsTextWindow(this);
         connect(this, &MainWindow::treeRowChanged, graphicsTextWindow, &GraphicsTextWindow::onTreeRowChanged);
     }
-    graphicsTextWindow->show();
+    // 定位到主窗口右侧
+    QRect mainRect = this->frameGeometry();
+    QPoint targetPos = mainRect.topRight();
+    graphicsTextWindow->move(targetPos);
+    graphicsTextWindow->resize(graphicsTextWindow->width(), mainRect.height());
+    if (!graphicsTextWindow->isVisible()) {
+        graphicsTextWindow->show();
+    }
     graphicsTextWindow->raise();
 }
 
