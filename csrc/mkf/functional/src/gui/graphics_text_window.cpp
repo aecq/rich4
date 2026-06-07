@@ -117,7 +117,7 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
             textEdit->setPlainText(sig);
         } else {
             textEdit->setPlainText(
-                parseBig5(cache->getResource(index.row())).left(64 * 1024));
+                parseBig5(cache->getResource(index.row()).left(2 * 1024)));
         }
     } else if (depth == 2) {
         QModelIndex parent = index.parent();
