@@ -14,11 +14,28 @@
 #include <QImage>
 #include <QPixmap>
 
+const int PALETTE_SIZE = 256;
+
 using ResourceIndexOffset = int32_t;
 using ResourceOffset = int32_t;
 
 extern "C" {
     void mkf_decompress(void *dst, const void *src, size_t bufsz);
+}
+
+template <typename T>
+static inline T readDataAtOffset(const QByteArray &byteArray, int offset)
+{
+    // 边界检查：防止偏移越界导致崩溃
+    if (offset < 0 || offset + sizeof(T) > byteArray.size()) {
+        qWarning() << "偏移量越界！offset:" << offset << "数据长度:" << byteArray.size();
+        return T(); // 返回类型默认值
+    }
+
+    // 1. const_cast 去掉 const 限制（只读操作无风险）
+    // 2. 指针 + offset 偏移到目标字节位置
+    // 3. 强制转换为目标类型指针，再解引用取值
+    return *reinterpret_cast<T*>(const_cast<char*>(byteArray.constData()) + offset);
 }
 
 // ====================
@@ -144,36 +161,64 @@ static inline QRgb parseRGB555(const int16_t& color) {
     return qRgb(r, g, b);
 }
 
+static inline QVector<QRgb> parsePalette(const QByteArray& bytes, int offset=0) {
+    QVector<QRgb> palette(PALETTE_SIZE);
+    for (int i = 0; i < palette.size(); i++) {
+        palette[i] = parseRGB555(readDataAtOffset<int16_t>(bytes, offset + i * sizeof(int16_t)));
+    }
+    return palette;
+}
+
 // ====================
 //  parseImages: 以 SPR 或 SMP 开头 const QByteArray& bytes 中解析图像块列表
 // ====================
 static inline std::vector<QImage> parseImages(const QByteArray& bytes, int offset=0) {
     std::vector<QImage> images;
     SPRSMPHeader header = parseSPRSMPHeader(bytes, offset);
-    std::vector<GraphInfo> graphInfos = parseGraphInfos(bytes, offset + sizeof(SPRSMPHeader));
+    std::vector<GraphInfo> graphInfos = parseGraphInfos(bytes, offset);
     images.reserve(header.num_chunks);
     if (isSPR(header)) {
         // palette: 512 bytes // each int16_t -> RGB555, 256 colors
-        QVector<QRgb> palette(256);
-        const int16_t* src = reinterpret_cast<const int16_t*>(bytes.constData() + header.start_offset);
-        std::generate(palette.begin(), palette.end(), [&]() {
-            return parseRGB555(*src++);
-        });
+        QVector<QRgb> palette = parsePalette(bytes, header.start_offset);
         // (width[0] * height[0]) bytes  // QImage::Format_Indexed8
         // ...
         // (width[num_chunks-1] * height[num_chunks-1]) bytes  // QImage::Format_Indexed8
+        int start = 0;
         for (auto& info : graphInfos) {
             QImage image = QImage(info.width, info.height, QImage::Format_Indexed8);
             image.setColorTable(palette);
+            int paletteEnd = header.start_offset + sizeof(int16_t) * PALETTE_SIZE;
+            for (int y = 0; y < info.height; y++) {
+                for (int x = 0; x < info.width; x++) {
+                    int index = y * info.width + x;
+                    int colorOffset = start + index;
+                    uint colorIndex = (uint)(unsigned char)bytes[paletteEnd + colorOffset];
+                    if (colorIndex < PALETTE_SIZE) {
+                        image.setPixel(QPoint(x, y), colorIndex);
+                    }
+                }
+            }
             images.push_back(image);
+            start += info.gsize;
         }
     } else {
         // (width[0] * height[0]) bytes  // QImage::Format_RGB555
         // ...
         // (width[num_chunks-1] * height[num_chunks-1]) bytes  // QImage::Format_RGB555
+        int start = 0;
         for (auto& info : graphInfos) {
             QImage image = QImage(info.width, info.height, QImage::Format_RGB555);
+            for (int y = 0; y < info.height; y++) {
+                for (int x = 0; x < info.width; x++) {
+                    int index = y * info.width + x;
+                    int headerEnd = header.start_offset;
+                    int colorOffset = start + index * sizeof(int16_t);
+                    QRgb color = parseRGB555(readDataAtOffset<int16_t>(bytes, headerEnd+colorOffset));
+                    image.setPixel(QPoint(x, y), color);
+                }
+            }
             images.push_back(image);
+            start += info.gsize;
         }
     }
     return images;
