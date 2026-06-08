@@ -171,6 +171,22 @@ static inline QVector<QRgb> parsePalette(const QByteArray& bytes, int offset=0) 
 }
 
 // ====================
+//  parseImage: 从 const QByteArray& bytes 中解析图像块. 图像块大小为 width * height * 2 bytes.
+// ====================
+static inline QImage parseImage(const QByteArray& bytes, const int& width, const int& height) {
+    QImage image(width, height, QImage::Format_RGB555);
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            const int index = y * width + x;
+            const int colorOffset = index * sizeof(int16_t);
+            QRgb color = parseRGB555(readDataAtOffset<int16_t>(bytes, colorOffset));
+            image.setPixel(QPoint(x, y), color);
+        }
+    }
+    return image;
+}
+
+// ====================
 //  parseImages: 以 SPR 或 SMP 开头 const QByteArray& bytes 中解析图像块列表
 // ====================
 static inline std::vector<QImage> parseImages(const QByteArray& bytes, int offset=0) {
