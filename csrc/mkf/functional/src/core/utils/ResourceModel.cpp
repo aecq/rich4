@@ -136,15 +136,13 @@ void ResourceModel::saveCSV() {
         return;
     }
     QString csvFilename = getCSVFilename();
+    QString csvTmpFilename = csvFilename + "-tmp";
+    QString csvBakFilename = csvFilename + "-bak";
     QFile csv(csvFilename);
-    QFile csvBak(csvFilename + "-bak");
-    if (csvBak.exists()) {
-        csvBak.remove();
-    }
-    csv.rename(csvBak.fileName());
-    csv.setFileName(csvFilename);
-    if (csv.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&csv);
+    QFile csvTmp(csvTmpFilename);
+    QFile csvBak(csvBakFilename);
+    if (csvTmp.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&csvTmp);
         out.setGenerateByteOrderMark(true);
         out << "index,type,comment\n";
         for (int i = 0; i < cache->n(); i++) {
@@ -155,10 +153,15 @@ void ResourceModel::saveCSV() {
             out << line;
         }
         out.flush();
-        csv.close();
-        qDebug() << "saved (UTF-8) " << csvFilename;
+        csvTmp.close();
+        qDebug() << "saved (UTF-8) " << csvTmpFilename;
     } else {
-        qDebug() << "saveCSV: failed to open file" << csvFilename;
+        qDebug() << "saveCSV: failed to open file" << csvTmpFilename;
+    }
+    if (csvTmp.exists()) {
+        csv.rename(csvBakFilename);
+        csvTmp.rename(csvFilename);
+        qDebug() << csvTmpFilename << " renamed to " << csvFilename;
     }
 }
 
