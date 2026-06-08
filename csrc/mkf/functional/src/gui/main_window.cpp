@@ -27,6 +27,7 @@
 #include <QAction>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QProcess>
 #include <QPushButton>
 #include <QToolBar>
 #include <qitemselectionmodel.h>
@@ -75,6 +76,10 @@ void MainWindow::createMenuBar() {
     connect(playAudioAction, &QAction::triggered, this, &MainWindow::playAudio);
     playAudioAction->setEnabled(false);
 
+    playFLCAction = showMenu->addAction("Play FLC");
+    playFLCAction->setShortcut(QKeySequence::Refresh);
+    connect(playFLCAction, &QAction::triggered, this, &MainWindow::playFLC);
+
     QAction* graphicsTextAction = showMenu->addAction("Graphics Text");
     connect(graphicsTextAction, &QAction::triggered, this, &MainWindow::openGraphicsTextWindow);
 }
@@ -88,6 +93,7 @@ void MainWindow::createToolBar() {
     toolBar->addSeparator();
 
     toolBar->addAction(playAudioAction);
+    toolBar->addAction(playFLCAction);
 
     QAction* graphicsTextAction = toolBar->addAction("Graphics Text");
     connect(graphicsTextAction, &QAction::triggered, this, &MainWindow::openGraphicsTextWindow);
@@ -134,6 +140,62 @@ void MainWindow::playAudio() {
     } else {
         statusBar()->showMessage("Please select an audio resource.");
     }
+}
+
+void MainWindow::playFLC() {
+    QItemSelectionModel* selectionModel = treeView->selectionModel();
+    QModelIndex index = selectionModel->currentIndex();
+    if (!index.isValid()) {
+        return;
+    }
+    // #region depth
+    int depth = 0;
+    QModelIndex temp = index;
+    while (temp.parent().isValid()) {
+        temp = temp.parent();
+        depth++;
+    }
+    // #endregion depth
+    if (depth != 1) {
+        return;
+    }
+    int row = index.row();
+    QString defaultName = QString("%1%2.flc").arg(resourceModel->getBasename()).arg(row, 4, 10, QChar('0'));
+    QString flcFolder = resourceModel->getCSVFolder() + "/flc/";
+    QString filename = flcFolder + defaultName;
+    QDir dir(flcFolder);
+    dir.mkpath(flcFolder);
+    // #region vlc
+    // qDebug() << qgetenv("PATH");
+    // 1. 检查文件路径是否为空
+    QFile file(filename);
+    if (!file.exists()) {
+        resourceModel->exportBinary(row, filename);
+        qDebug() << "Exported binary to:" << filename;
+    }
+    // 2. 创建QProcess（Qt跨平台进程调用类）
+    QProcess *vlcProcess = new QProcess();
+    // 设置进程结束后自动销毁，避免内存泄漏
+    vlcProcess->setParent(nullptr);
+    vlcProcess->setProgram("vlc"); // 直接调用PATH中的vlc命令
+    // 3. 构建参数：播放文件 + 推荐参数（后台播放，不阻塞Qt程序）
+    QStringList arguments;
+    arguments << filename.replace("/", "\\")  // VLC 参数文件路径
+            //   << "--play-and-exit"   // 播放完毕自动关闭VLC
+              << "--one-instance";   // 单实例运行（避免重复打开VLC）
+    vlcProcess->setArguments(arguments);
+    // 4. 启动VLC进程（分离式启动，不阻塞主程序）
+    bool startOk = vlcProcess->startDetached();
+    if (startOk) {
+        qDebug() << "VLC 启动成功，正在播放：" << filename;
+    } else {
+        qDebug() << "VLC 启动失败！错误信息：" << vlcProcess->errorString();
+        qDebug() << "请确认 VLC 已添加到系统环境变量 PATH 中";
+        statusBar()->showMessage("VLC 启动失败！错误信息：" + vlcProcess->errorString());
+    }
+    // 因为是startDetached，进程对象可以安全删除
+    vlcProcess->deleteLater();
+    // #endregion vlc
 }
 
 void MainWindow::saveCSV() {

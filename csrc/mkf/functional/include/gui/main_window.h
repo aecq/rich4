@@ -21,6 +21,7 @@ public:
 private slots:
     void openFile();
     void playAudio();
+    void playFLC();
     void saveCSV();
     void exportResource();
     void openGraphicsTextWindow();
@@ -42,6 +43,7 @@ private:
     QStandardItemModel* treeModel = nullptr;
 
     QAction* playAudioAction = nullptr;
+    QAction* playFLCAction = nullptr;
     QAction* saveCSVAction = nullptr;
 
     GraphicsTextWindow* graphicsTextWindow = nullptr;
