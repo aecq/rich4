@@ -1,6 +1,7 @@
 #pragma once
 
-#include "core/utils/Cache.h"
+// #include "core/utils/Cache.h"
+#include "core/utils/ResourceModel.h"
 #include <QFile>
 #include <QMainWindow>
 #include <QStandardItemModel>
@@ -14,7 +15,8 @@ public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
     void treeSelectionChanged(const QModelIndex& current, const QModelIndex& previous);
-    Cache* getCache() { return cache; }
+    // Cache* getCache() { return cache; }
+    ResourceModel* getResourceModel() { return resourceModel; }
     
 private slots:
     void openFile();
@@ -31,7 +33,8 @@ private:
     void updatePlayActionState();
 
 private:
-    Cache* cache = nullptr;
+    // Cache* cache = nullptr;
+    ResourceModel* resourceModel = nullptr;
     QTreeView* treeView = nullptr;
     QStandardItemModel* treeModel = nullptr;
 

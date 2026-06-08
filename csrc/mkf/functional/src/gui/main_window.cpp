@@ -1,7 +1,7 @@
 #include "core/io/Parse.h"
 #include "core/types/ResourceHeader.h"
 #include "core/types/SPRSMPHeader.h"
-#include "core/utils/Cache.h"
+#include "core/utils/ResourceModel.h"
 #include "core/utils/MediaPlayer.h"
 #include "gui/graphics_text_window.h"
 #include "gui/main_window.h"
@@ -97,12 +97,12 @@ void MainWindow::openFile() {
     if (filepath.isEmpty()) {
         return;
     }
-    if (!cache)
-        cache = new Cache(filepath);
-    else
-        cache->init(filepath);
+    if (!resourceModel) {
+        resourceModel = new ResourceModel();
+    }
+    resourceModel->init(filepath);
     loadFileTree();
-    statusBar()->showMessage(QString("Loaded %1 resource(s): %2").arg(cache->n()).arg(filepath));
+    statusBar()->showMessage(QString("Loaded %1 resource(s): %2").arg(resourceModel->n()).arg(filepath));
 }
 
 void MainWindow::playAudio() {
@@ -119,9 +119,9 @@ void MainWindow::playAudio() {
         depth++;
     }
     // #endregion depth
-    if (depth == 1 && cache->getSignature(index.row()).startsWith("RIFF")) {
+    if (depth == 1 && resourceModel->getSignature(index.row()).startsWith("RIFF")) {
         statusBar()->showMessage("Playing audio at index:" + QString::number(index.row()));
-        QByteArray data = cache->getResource(index.row());
+        QByteArray data = resourceModel->getResource(index.row());
         MediaPlayer::instance().play(data);
     } else {
         statusBar()->showMessage("Please select an audio resource.");
@@ -155,23 +155,23 @@ void MainWindow::loadFileTree() {
 
     // 根节点只在第 0 列表显示文件名，其他列留空
     QList<QStandardItem*> rootRow;
-    rootRow << new QStandardItem(cache->getFilename().split('/').last())
+    rootRow << new QStandardItem(resourceModel->getFilenamePrefix().split("/").last())
             << new QStandardItem("")
             << new QStandardItem("");
     treeModel->appendRow(rootRow);
     QStandardItem *rootItem = rootRow[0]; // 取根节点
 
-    for (int i = 0; i < cache->n(); i++) {
-        // 从 cache 取数据
-        QString sig = cache->getSignature(i);
-        uint32_t uncompressed = cache->getHeader(i).uncompressed_size;
-        uint32_t compressed = cache->getHeader(i).compressed_size;
+    for (int i = 0; i < resourceModel->n(); i++) {
+        // 从 resourceModel 取数据
+        QString sig = resourceModel->getSignature(i);
+        uint32_t uncompressed = resourceModel->getHeader(i).uncompressed_size;
+        uint32_t compressed = resourceModel->getHeader(i).compressed_size;
 
         // 创建一行 4 个单元格
         QList<QStandardItem*> row;
 
         if (sig.startsWith("SPR") || sig.startsWith("SMP")) {
-            QByteArray bytes = cache->getResource(i);
+            QByteArray bytes = resourceModel->getResource(i);
             SPRSMPHeader header = parseSPRSMPHeader(bytes);
             row << new QStandardItem(QString::number(i))
                 << new QStandardItem(QString("%1 (%2)")
@@ -217,7 +217,7 @@ void MainWindow::updatePlayActionState() {
         }
 
         // 判断条件
-        if (depth == 1 && cache->getSignature(index.row()).startsWith("RIFF")) {
+        if (depth == 1 && resourceModel->getSignature(index.row()).startsWith("RIFF")) {
             enable = true;
         }
     }

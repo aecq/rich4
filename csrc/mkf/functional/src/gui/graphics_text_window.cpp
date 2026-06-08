@@ -63,13 +63,13 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
         temp = temp.parent();
         depth++;
     }
-    Cache* cache = m_mainWindow->getCache();
+    ResourceModel* resourceModel = m_mainWindow->getResourceModel();
     // Image
     gallery->clear();
     if (depth == 1) {
-        QString sig = cache->getSignature(index.row());
+        QString sig = resourceModel->getSignature(index.row());
         if (sig.startsWith("SPR") || sig.startsWith("SMP")) {
-            std::vector<QImage> images = parseImages(cache->getResource(index.row()));
+            std::vector<QImage> images = parseImages(resourceModel->getResource(index.row()));
             for (size_t i = 0; i < images.size(); i++) {
                 if (!images[i].isNull()) {
                     QPixmap pixmap = QPixmap::fromImage(images[i]);
@@ -89,9 +89,9 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
         }
     } else if (depth == 2) {
         QModelIndex parent = index.parent();
-        QString sig = cache->getSignature(parent.row());
+        QString sig = resourceModel->getSignature(parent.row());
         if ((sig.startsWith("SPR") || sig.startsWith("SMP"))) {
-            std::vector<QImage> images = parseImages(cache->getResource(parent.row()));
+            std::vector<QImage> images = parseImages(resourceModel->getResource(parent.row()));
             if (index.row() < images.size() && !images[index.row()].isNull()) {
                 QPixmap pixmap = QPixmap::fromImage(images[index.row()]);
                 QIcon icon(pixmap);
@@ -110,28 +110,28 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
     }
     // Text
     if (depth == 1) {
-        QString sig = cache->getSignature(index.row());
+        QString sig = resourceModel->getSignature(index.row());
         if (sig.startsWith("SPR")) {
-            textEdit->setHtml(paletteHTML(index, cache));
+            textEdit->setHtml(paletteHTML(index, resourceModel));
         } else if (sig.startsWith("SMP") || sig.startsWith("RIFF")) {
             textEdit->setPlainText(sig);
         } else {
             textEdit->setPlainText(
-                parseBig5(cache->getResource(index.row()).left(2 * 1024)));
+                parseBig5(resourceModel->getResource(index.row()).left(2 * 1024)));
         }
     } else if (depth == 2) {
         QModelIndex parent = index.parent();
-        QString sig = cache->getSignature(parent.row());
+        QString sig = resourceModel->getSignature(parent.row());
         if (sig.startsWith("SPR")) {
-            textEdit->setHtml(paletteHTML(parent, cache));
+            textEdit->setHtml(paletteHTML(parent, resourceModel));
         } else {
             textEdit->setPlainText("");
         }
     }
 }
 
-QString GraphicsTextWindow::paletteHTML(const QModelIndex &index, Cache* cache) {
-    QByteArray bytes = cache->getResource(index.row());
+QString GraphicsTextWindow::paletteHTML(const QModelIndex &index, ResourceModel* resourceModel) {
+    QByteArray bytes = resourceModel->getResource(index.row());
     SPRSMPHeader header = parseSPRSMPHeader(bytes);
     QVector<QRgb> palette = parsePalette(bytes, header.start_offset);
     QString text = "";

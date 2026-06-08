@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/utils/Cache.h"
+#include "core/utils/ResourceModel.h"
 #include <QListWidget>
 #include <QModelIndex>
 #include <QTextEdit>
@@ -16,7 +16,7 @@ public:
 private:
     void setupUI();
     void update(const QModelIndex &index);
-    QString paletteHTML(const QModelIndex &index, Cache* cache);
+    QString paletteHTML(const QModelIndex &index, ResourceModel* resourceModel);
 
 public slots:
     void onTreeRowChanged(const QModelIndex &index);
