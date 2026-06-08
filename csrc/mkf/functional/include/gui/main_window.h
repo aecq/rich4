@@ -22,6 +22,7 @@ private slots:
     void openFile();
     void playAudio();
     void saveCSV();
+    void exportResource();
     void openGraphicsTextWindow();
     void onTreeDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
 

@@ -65,6 +65,9 @@ void MainWindow::createMenuBar() {
     saveCSVAction->setShortcut(QKeySequence::Save);
     connect(saveCSVAction, &QAction::triggered, this, &MainWindow::saveCSV);
 
+    QAction* exportAction = fileMenu->addAction("Export Binary");
+    connect(exportAction, &QAction::triggered, this, &MainWindow::exportResource);
+
     QMenu* showMenu = menuBar()->addMenu("&Show");
 
     playAudioAction = showMenu->addAction("Play Audio");
@@ -135,6 +138,35 @@ void MainWindow::playAudio() {
 
 void MainWindow::saveCSV() {
     resourceModel->saveCSV();
+}
+
+void MainWindow::exportResource() {
+    QItemSelectionModel* selectionModel = treeView->selectionModel();
+    QModelIndex index = selectionModel->currentIndex();
+    if (!index.isValid()) {
+        return;
+    }
+    int depth = 0;
+    QModelIndex temp = index;
+    while (temp.parent().isValid()) {
+        temp = temp.parent();
+        depth++;
+    }
+    if (depth != 1) {
+        statusBar()->showMessage("Please select a resource to export.");
+        return;
+    }
+    int row = index.row();
+    QString defaultName = QString("%1%2%3.%4")
+        .arg(resourceModel->getBasename())
+        .arg(row, 4, 10, QChar('0'))
+        .arg(legalFilename(resourceModel->getComment(row)))
+        .arg(resourceModel->getType(row).size() > 0 ? resourceModel->getType(row) : "bin");
+    QString filepath = QFileDialog::getSaveFileName(this, "Export Binary", defaultName, "Binary Files (*.*)");
+    if (!filepath.isEmpty()) {
+        resourceModel->exportBinary(row, filepath);
+        statusBar()->showMessage(QString("Exported resource %1 to %2").arg(row).arg(filepath));
+    }
 }
 
 void MainWindow::openGraphicsTextWindow()
