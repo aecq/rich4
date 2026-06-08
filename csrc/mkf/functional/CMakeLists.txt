@@ -12,6 +12,7 @@ find_package(Qt6 COMPONENTS Core Core5Compat Gui Widgets Multimedia REQUIRED)
 
 set(SOURCES
     src/core/utils/Cache.cpp
+    src/core/utils/ResourceModel.cpp
     src/core/utils/MediaPlayer.cpp
     src/gui/graphics_text_window.cpp
     src/gui/main_window.cpp
@@ -21,6 +22,7 @@ set(SOURCES
 
 set(HEADERS
     include/core/utils/Cache.h
+    include/core/utils/ResourceModel.h
     include/core/utils/MediaPlayer.h
     include/gui/graphics_text_window.h
     include/gui/main_window.h
