@@ -52,13 +52,16 @@ ResourceHeader Cache::getHeader(int index) {
 }
 
 QString Cache::getSignature(int index) {
-    if (signatures[index].startsWith("SPR") ||
-        signatures[index].startsWith("SMP") ||
-        signatures[index].startsWith("RIFF")
-    ) {
-        return signatures[index];
+    if (signatures[index].startsWith("SPR")) {
+        return QString("SPR");
     }
-    return QString("....");
+    if (signatures[index].startsWith("SMP")) {
+        return QString("SMP");
+    }
+    if (signatures[index].startsWith("RIFF")) {
+        return QString("RIFF");
+    }
+    return QString("...");
 }
 
 QByteArray Cache::getResource(int index) {
