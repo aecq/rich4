@@ -3,6 +3,7 @@
 #include "core/types/ResourceHeader.h"
 #include "core/types/SPRSMPHeader.h"
 #include <QByteArray>
+#include <QRegularExpression>
 
 static inline bool guessBig5(QByteArray &data) {
     int printableCount = 0;
@@ -37,4 +38,8 @@ static inline bool isCompressed(const ResourceHeader& header) {
 
 static inline bool isSPR(const SPRSMPHeader& header) {
     return memcmp(header.signature, "SPR\0", sizeof(char[4])) == 0;
+}
+
+static QString legalFilename(const QString& filename) {
+    return QString(filename).replace(QRegularExpression("[\\/:*?\"<>|]"), "_");
 }
