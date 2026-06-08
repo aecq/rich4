@@ -61,6 +61,10 @@ void MainWindow::createMenuBar() {
     openAction->setShortcut(QKeySequence::Open);
     connect(openAction, &QAction::triggered, this, &MainWindow::openFile);
 
+    saveCSVAction = fileMenu->addAction("Save CSV");
+    saveCSVAction->setShortcut(QKeySequence::Save);
+    connect(saveCSVAction, &QAction::triggered, this, &MainWindow::saveCSV);
+
     QMenu* showMenu = menuBar()->addMenu("&Show");
 
     playAudioAction = showMenu->addAction("Play Audio");
@@ -90,6 +94,7 @@ void MainWindow::setupConnections() {
     connect(this, &MainWindow::destroyed, qApp, &QApplication::quit);
     connect(treeView->selectionModel(), &QItemSelectionModel::currentChanged,
             this, &MainWindow::treeSelectionChanged);
+    connect(treeModel, &QStandardItemModel::dataChanged, this, &MainWindow::onTreeDataChanged);
 }
 
 void MainWindow::openFile() {
@@ -126,6 +131,10 @@ void MainWindow::playAudio() {
     } else {
         statusBar()->showMessage("Please select an audio resource.");
     }
+}
+
+void MainWindow::saveCSV() {
+    resourceModel->saveCSV();
 }
 
 void MainWindow::openGraphicsTextWindow()
@@ -200,12 +209,34 @@ void MainWindow::loadFileTree() {
             row << new QStandardItem(QString::number(i)/*ReadOnly*/)
                 << new QStandardItem(QString("%1 %2 ≥ %3").arg(sig)
                     .arg(QString::number(uncompressed)).arg(QString::number(compressed))/*ReadOnly*/)
-                << new QStandardItem("")
+                << new QStandardItem(resourceModel->getType(i))
                 << new QStandardItem(resourceModel->getComment(i));
         }
         rootItem->appendRow(row);
     }
     treeView->expandToDepth(0);
+}
+
+void MainWindow::onTreeDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight) {
+    // 计算深度
+    int depth = 0;
+    QModelIndex temp = topLeft;
+    while (temp.parent().isValid()) {
+        temp = temp.parent();
+        depth++;
+    }
+    // 判断条件
+    if (depth != 1) {
+        return;
+    }
+    int row = topLeft.row();
+    int col = topLeft.column();
+    if (col == 2) {
+        resourceModel->setType(row, topLeft.data().toString());
+    }
+    if (col == 3) {
+        resourceModel->setComment(row, topLeft.data().toString());
+    }
 }
 
 // 更新播放按钮状态

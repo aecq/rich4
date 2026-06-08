@@ -21,8 +21,10 @@ public:
 private slots:
     void openFile();
     void playAudio();
+    void saveCSV();
     void openGraphicsTextWindow();
-    
+    void onTreeDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
+
 private:
     void setupUI();
     void createMenuBar();
@@ -39,6 +41,7 @@ private:
     QStandardItemModel* treeModel = nullptr;
 
     QAction* playAudioAction = nullptr;
+    QAction* saveCSVAction = nullptr;
 
     GraphicsTextWindow* graphicsTextWindow = nullptr;
 

@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QFile>
+#include <QTextStream>
 
 ResourceModel::ResourceModel() {
 }
@@ -64,6 +65,22 @@ QString ResourceModel::getCSVFilename() {
     return getCSVFolder() + "/" + getBasename() + ".csv";
 }
 
+void ResourceModel::setType(int index, QString type) {
+    if (index < 0 || index >= cache->n()) {
+        qDebug() << "setType: index out of range";
+        return;
+    }
+    types[index] = type;
+}
+
+void ResourceModel::setComment(int index, QString comment) {
+    if (index < 0 || index >= cache->n()) {
+        qDebug() << "setComment: index out of range";
+        return;
+    }
+    comments[index] = comment;
+}
+
 void ResourceModel::loadCSV() {
     if (!cache) {
         qDebug() << "loadCSV: cache is null";
@@ -120,37 +137,31 @@ void ResourceModel::saveCSV() {
     }
     QString csvFilename = getCSVFilename();
     QFile csv(csvFilename);
-    csv.open(QIODevice::WriteOnly);
-    csv.write("index,type,comment\n");
-    for (int i = 0; i < cache->n(); i++) {
-        csv.write(
-            QString("%1,%2,%3\n")
-                    .arg(i)
-                    .arg(types[i].trimmed())
-                    .arg(comments[i].replace(",", "<comma>"))
-                    .toStdString().c_str()
-        );
+    QFile csvBak(csvFilename + "-bak");
+    if (csvBak.exists()) {
+        csvBak.remove();
     }
-    csv.close();
-    qDebug() << "saved " << csvFilename;
+    csv.rename(csvBak.fileName());
+    csv.setFileName(csvFilename);
+    if (csv.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&csv);
+        out.setGenerateByteOrderMark(true);
+        out << "index,type,comment\n";
+        for (int i = 0; i < cache->n(); i++) {
+            QString line = QString("%1,%2,%3\n")
+                           .arg(i)
+                           .arg(types[i].trimmed())
+                           .arg(comments[i].replace(",", "<comma>"));
+            out << line;
+        }
+        out.flush();
+        csv.close();
+        qDebug() << "saved (UTF-8) " << csvFilename;
+    } else {
+        qDebug() << "saveCSV: failed to open file" << csvFilename;
+    }
 }
 
 QString ResourceModel::getType(int index) { return types[index]; }
 
 QString ResourceModel::getComment(int index) { return comments[index]; }
-
-void ResourceModel::onTypeChanged(int index, QString type) {
-    if (index >= types.size()) {
-        qDebug() << "onTypeChanged: index out of range";
-        return;
-    }
-    types[index] = type;
-}
-
-void ResourceModel::onCommentChanged(int index, QString comment) {
-    if (index >= comments.size()) {
-        qDebug() << "onCommentChanged: index out of range";
-        return;
-    }
-    comments[index] = comment;
-}

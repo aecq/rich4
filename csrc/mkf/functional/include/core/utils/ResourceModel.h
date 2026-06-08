@@ -23,6 +23,9 @@ public:
     QString getFilenamePrefix();  // folder/basename without .ext
     QString getCSVFilename();
 
+    void setType(int index, QString);
+    void setComment(int index, QString);
+
     void loadCSV();
     void saveCSV();
 
@@ -37,8 +40,4 @@ private:
 
 signals:
     void dataLoaded();
-
-public slots:
-    void onTypeChanged(int index, QString);
-    void onCommentChanged(int comment, QString);
 };
