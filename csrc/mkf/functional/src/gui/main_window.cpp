@@ -148,16 +148,18 @@ void MainWindow::openGraphicsTextWindow()
 void MainWindow::loadFileTree() {
     treeModel->clear();
     treeModel->setHorizontalHeaderLabels({
-        "index",
-        "signature",
-        "(un)compressed size",
+        "#",
+        "Info",
+        "Type",
+        "Comment",
     });
 
     // 根节点只在第 0 列表显示文件名，其他列留空
     QList<QStandardItem*> rootRow;
-    rootRow << new QStandardItem(resourceModel->getFilenamePrefix().split("/").last())
-            << new QStandardItem("")
-            << new QStandardItem("");
+    rootRow << new QStandardItem(resourceModel->getBasename()/*ReadOnly*/)
+            << new QStandardItem(""/*ReadOnly*/)
+            << new QStandardItem(""/*ReadOnly*/)
+            << new QStandardItem(""/*ReadOnly*/);
     treeModel->appendRow(rootRow);
     QStandardItem *rootItem = rootRow[0]; // 取根节点
 
@@ -173,26 +175,33 @@ void MainWindow::loadFileTree() {
         if (sig.startsWith("SPR") || sig.startsWith("SMP")) {
             QByteArray bytes = resourceModel->getResource(i);
             SPRSMPHeader header = parseSPRSMPHeader(bytes);
-            row << new QStandardItem(QString::number(i))
-                << new QStandardItem(QString("%1 (%2)")
-                    .arg(sig).arg(QString::number(header.num_chunks)))
-                << new QStandardItem(QString("%1 > %2")
-                    .arg(QString::number(uncompressed)).arg(QString::number(compressed)));
+            // SPR || SMP Info: sig (num_chunks) uncsize ≥ csize
+            row << new QStandardItem(QString::number(i)/*ReadOnly*/)
+                << new QStandardItem(QString("%1 (%2) %3 ≥ %4")
+                    .arg(sig).arg(QString::number(header.num_chunks))
+                    .arg(QString::number(uncompressed)).arg(QString::number(compressed))/*ReadOnly*/)
+                << new QStandardItem(resourceModel->getType(i)/*ReadOnly*/)
+                << new QStandardItem(resourceModel->getComment(i));
             QStandardItem *rowItem = row[0];
             std::vector<GraphInfo> graphInfos = parseGraphInfos(bytes);
             for (int j = 0; j < graphInfos.size(); j++) {
                 QList<QStandardItem*> chunkRow;
-                chunkRow << new QStandardItem(QString::number(j))
-                         << new QStandardItem(QString("%1 x %2")
-                            .arg(QString::number(graphInfos[j].width)).arg(QString::number(graphInfos[j].height)))
-                         << new QStandardItem(QString("(%1, %2)")
-                            .arg(QString::number(graphInfos[j].x)).arg(QString::number(graphInfos[j].y)));
+                // Chunk Info: w x h (x, y)
+                chunkRow << new QStandardItem(QString::number(j)/*ReadOnly*/)
+                         << new QStandardItem(QString("%1 x %2 (%3, %4)")
+                            .arg(QString::number(graphInfos[j].width)).arg(QString::number(graphInfos[j].height))
+                            .arg(QString::number(graphInfos[j].x)).arg(QString::number(graphInfos[j].y)/*ReadOnly*/))
+                         << new QStandardItem(""/*ReadOnly*/)
+                         << new QStandardItem(""/*ReadOnly*/);
                 rowItem->appendRow(chunkRow);
             }
         } else {
-            row << new QStandardItem(QString::number(i))
-                << new QStandardItem(sig)
-                << new QStandardItem(QString("%1 > %2").arg(QString::number(uncompressed)).arg(QString::number(compressed)));
+            // Other Info: sig uncsize ≥ csize
+            row << new QStandardItem(QString::number(i)/*ReadOnly*/)
+                << new QStandardItem(QString("%1 %2 ≥ %3").arg(sig)
+                    .arg(QString::number(uncompressed)).arg(QString::number(compressed))/*ReadOnly*/)
+                << new QStandardItem("")
+                << new QStandardItem(resourceModel->getComment(i));
         }
         rootItem->appendRow(row);
     }
