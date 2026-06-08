@@ -165,3 +165,18 @@ void ResourceModel::saveCSV() {
 QString ResourceModel::getType(int index) { return types[index]; }
 
 QString ResourceModel::getComment(int index) { return comments[index]; }
+
+void ResourceModel::exportBinary(int i, QString filename) {
+    if (!cache) {
+        qDebug() << "exportBinary: cache is null";
+        return;
+    }
+    QFile binary(filename);
+    if (!binary.open(QIODevice::WriteOnly)) {
+        qDebug() << "exportBinary: failed to open file" << filename;
+        return;
+    }
+    binary.write(cache->getResource(i));
+    binary.close();
+    qDebug() << getBasename() << "[" << i << "] exported " << filename;
+}

@@ -32,6 +32,8 @@ public:
     QString getType(int index);
     QString getComment(int index);
 
+    void exportBinary(int i, QString filename);
+
 private:
     QString filenamePrefix;
     Cache* cache = nullptr;
