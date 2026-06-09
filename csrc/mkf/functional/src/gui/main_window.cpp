@@ -295,6 +295,8 @@ void MainWindow::openGraphicsTextWindow()
         connect(graphicsTextWindow, &GraphicsTextWindow::statusMessage, this, [this](const QString& message) {
             statusBar()->showMessage(message);
         });
+        QModelIndex index = treeView->currentIndex();
+        graphicsTextWindow->onTreeRowChanged(index);
     }
     // 定位到主窗口右侧
     QRect mainRect = this->frameGeometry();
