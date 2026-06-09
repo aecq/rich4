@@ -164,6 +164,7 @@ void ResourceModel::saveCSV() {
         csvTmp.rename(csvFilename);
         qDebug() << csvTmpFilename << " renamed to " << csvFilename;
     }
+    emit saved("Saved " + csvFilename);
 }
 
 QString ResourceModel::getType(int index) { return types[index]; }

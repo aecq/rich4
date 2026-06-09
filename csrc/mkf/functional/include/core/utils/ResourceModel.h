@@ -42,4 +42,5 @@ private:
 
 signals:
     void dataLoaded();
+    void saved(const QString& message);
 };

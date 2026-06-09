@@ -105,6 +105,9 @@ void MainWindow::setupConnections() {
     connect(treeView->selectionModel(), &QItemSelectionModel::currentChanged,
             this, &MainWindow::treeSelectionChanged);
     connect(treeModel, &QStandardItemModel::dataChanged, this, &MainWindow::onTreeDataChanged);
+    connect(resourceModel, &ResourceModel::saved, this, [this](const QString& message) {
+        statusBar()->showMessage(message, 2000);
+    });
 }
 
 void MainWindow::openFile() {
