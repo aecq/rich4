@@ -1,3 +1,4 @@
+#include "core/utils/check.h"
 #include "core/io/Parse.h"
 #include "core/io/WriteMKF.h"
 #include "core/types/ResourceHeader.h"
@@ -130,14 +131,7 @@ void MainWindow::playAudio() {
     if (!index.isValid()) {
         return;
     }
-    // #region depth
-    int depth = 0;
-    QModelIndex temp = index;
-    while (temp.parent().isValid()) {
-        temp = temp.parent();
-        depth++;
-    }
-    // #endregion depth
+    int depth = indexDepth(index);
     if (depth == 1 && resourceModel->getSignature(index.row()).startsWith("RIFF")) {
         statusBar()->showMessage("Playing audio at index:" + QString::number(index.row()));
         QByteArray data = resourceModel->getResource(index.row());
@@ -153,14 +147,7 @@ void MainWindow::playFLC() {
     if (!index.isValid()) {
         return;
     }
-    // #region depth
-    int depth = 0;
-    QModelIndex temp = index;
-    while (temp.parent().isValid()) {
-        temp = temp.parent();
-        depth++;
-    }
-    // #endregion depth
+    int depth = indexDepth(index);
     if (depth != 1) {
         return;
     }
@@ -213,12 +200,7 @@ void MainWindow::exportResource() {
     if (!index.isValid()) {
         return;
     }
-    int depth = 0;
-    QModelIndex temp = index;
-    while (temp.parent().isValid()) {
-        temp = temp.parent();
-        depth++;
-    }
+    int depth = indexDepth(index);
     if (depth != 1) {
         statusBar()->showMessage("Please select a resource to export.");
         return;
@@ -242,12 +224,7 @@ void MainWindow::replaceResource() {
     if (!index.isValid()) {
         return;
     }
-    int depth = 0;
-    QModelIndex temp = index;
-    while (temp.parent().isValid()) {
-        temp = temp.parent();
-        depth++;
-    }
+    int depth = indexDepth(index);
     if (depth != 1) {
         statusBar()->showMessage("Please select a resource to replace.");
         return;
@@ -374,12 +351,7 @@ void MainWindow::loadFileTree() {
 
 void MainWindow::onTreeDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight) {
     // 计算深度
-    int depth = 0;
-    QModelIndex temp = topLeft;
-    while (temp.parent().isValid()) {
-        temp = temp.parent();
-        depth++;
-    }
+    int depth = indexDepth(topLeft);
     // 判断条件
     if (depth != 1) {
         return;
@@ -404,12 +376,7 @@ void MainWindow::updatePlayActionState() {
 
     if (index.isValid()) {
         // 计算深度
-        int depth = 0;
-        QModelIndex temp = index;
-        while (temp.parent().isValid()) {
-            temp = temp.parent();
-            depth++;
-        }
+        int depth = indexDepth(index);
 
         // 判断条件
         if (depth == 1 && resourceModel->getSignature(index.row()).startsWith("RIFF")) {

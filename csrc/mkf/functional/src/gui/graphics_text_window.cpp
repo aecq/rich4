@@ -57,12 +57,7 @@ void GraphicsTextWindow::setupUI() {
 }
 
 void GraphicsTextWindow::update(const QModelIndex &index) {
-    int depth = 0;
-    QModelIndex temp = index;
-    while (temp.parent().isValid()) {
-        temp = temp.parent();
-        depth++;
-    }
+    int depth = indexDepth(index);
     ResourceModel* resourceModel = m_mainWindow->getResourceModel();
     // Image
     gallery->clear();

@@ -3,6 +3,7 @@
 #include "core/types/ResourceHeader.h"
 #include "core/types/SPRSMPHeader.h"
 #include <QByteArray>
+#include <QModelIndex>
 #include <QRegularExpression>
 
 static inline bool guessBig5(QByteArray &data) {
@@ -42,4 +43,14 @@ static inline bool isSPR(const SPRSMPHeader& header) {
 
 static QString legalFilename(const QString& filename) {
     return QString(filename).replace(QRegularExpression("[\\/:*?\"<>|]"), "_");
+}
+
+static inline int indexDepth(const QModelIndex &index) {
+    int depth = 0;
+    QModelIndex temp = index;
+    while (temp.parent().isValid()) {
+        temp = temp.parent();
+        depth++;
+    }
+    return depth;
 }
