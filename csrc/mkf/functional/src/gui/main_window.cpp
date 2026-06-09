@@ -234,6 +234,9 @@ void MainWindow::openGraphicsTextWindow()
     if (!graphicsTextWindow) {
         graphicsTextWindow = new GraphicsTextWindow(this);
         connect(this, &MainWindow::treeRowChanged, graphicsTextWindow, &GraphicsTextWindow::onTreeRowChanged);
+        connect(graphicsTextWindow, &GraphicsTextWindow::statusMessage, this, [this](const QString& message) {
+            statusBar()->showMessage(message);
+        });
     }
     // 定位到主窗口右侧
     QRect mainRect = this->frameGeometry();

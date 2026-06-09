@@ -100,13 +100,13 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
             uint height = heightStr.toUInt();
             if (width <= 0 || height <= 0) {
                 QString message = QString("width(%1) height(%2) is invalid").arg(width).arg(height);
-                qDebug() << message;
+                emit statusMessage(message);
                 return;
             }
             QByteArray bytes = resourceModel->getResource(index.row());
             if (width * height * 2 != bytes.size()) {
                 QString message =QString("%1 x %2 x 2 != %3. width * height * 2 != bytes.size()").arg(width).arg(height).arg(bytes.size());
-                qDebug() << message;
+                emit statusMessage(message);
                 return;
             }
             QImage image = parseImage(bytes, width, height);

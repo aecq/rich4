@@ -26,4 +26,7 @@ private:
 
     QTextEdit* textEdit;
     QListWidget* gallery;
+
+signals:
+    void statusMessage(const QString& message);
 };
