@@ -1,4 +1,5 @@
 #include "core/io/Parse.h"
+#include "core/io/WriteMKF.h"
 #include "core/types/ResourceHeader.h"
 #include "core/types/SPRSMPHeader.h"
 #include "core/utils/ResourceModel.h"
@@ -69,6 +70,9 @@ void MainWindow::createMenuBar() {
 
     QAction* exportAction = fileMenu->addAction("Export Binary");
     connect(exportAction, &QAction::triggered, this, &MainWindow::exportResource);
+
+    QAction* replaceResource = fileMenu->addAction("Replace Resource...");
+    connect(replaceResource, &QAction::triggered, this, &MainWindow::replaceResource);
 
     QMenu* showMenu = menuBar()->addMenu("&Show");
 
@@ -229,6 +233,57 @@ void MainWindow::exportResource() {
     if (!filepath.isEmpty()) {
         resourceModel->exportBinary(row, filepath);
         statusBar()->showMessage(QString("Exported resource %1 to %2").arg(row).arg(filepath));
+    }
+}
+
+void MainWindow::replaceResource() {
+    QItemSelectionModel* selectionModel = treeView->selectionModel();
+    QModelIndex index = selectionModel->currentIndex();
+    if (!index.isValid()) {
+        return;
+    }
+    int depth = 0;
+    QModelIndex temp = index;
+    while (temp.parent().isValid()) {
+        temp = temp.parent();
+        depth++;
+    }
+    if (depth != 1) {
+        statusBar()->showMessage("Please select a resource to replace.");
+        return;
+    }
+    int row = index.row();
+    try {
+        // dialog choose resource binary file
+        QString defaultName = QString("%1%2%3.%4")
+            .arg(resourceModel->getBasename())
+            .arg(row, 4, 10, QChar('0'))
+            .arg(legalFilename(resourceModel->getComment(row)))
+            .arg(resourceModel->getType(row).size() > 0 ? resourceModel->getType(row) : "bin");
+        QString resourceFilepath = QFileDialog::getOpenFileName(this, "Resource Binary", defaultName, "Binary Files (*.*)");
+        QString outFilepath = QFileDialog::getSaveFileName(this, "Save As", resourceModel->getBasename() + ".mkf", "MKF File (*.mkf)");
+        if (!resourceFilepath.isEmpty() && !outFilepath.isEmpty()) {
+            QFile inFile(resourceModel->getFilenamePrefix() + ".mkf");
+            if (!inFile.open(QIODevice::ReadOnly)) {
+                statusBar()->showMessage("Failed to open input file.");
+                return;
+            }
+            QFile outFile(outFilepath);
+            if (!outFile.open(QIODevice::WriteOnly)) {
+                statusBar()->showMessage("Failed to open output file.");
+                return;
+            }
+            QFile resourceFile(resourceFilepath);
+            if (!resourceFile.open(QIODevice::ReadOnly)) {
+                statusBar()->showMessage("Failed to open resource file.");
+                return;
+            }
+            QByteArray resource = resourceFile.readAll();
+            replaceBinary(inFile, outFile, resource, row);
+        }
+        statusBar()->showMessage(QString("Replaced resource %1. Saved %2").arg(row).arg(outFilepath));
+    } catch (const std::exception& e) {
+        statusBar()->showMessage(QString("Replace resource %1 failed: %2").arg(row).arg(e.what()));
     }
 }
 

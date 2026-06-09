@@ -24,6 +24,7 @@ private slots:
     void playFLC();
     void saveCSV();
     void exportResource();
+    void replaceResource();
     void openGraphicsTextWindow();
     void onTreeDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
 
