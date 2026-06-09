@@ -159,6 +159,7 @@ void ResourceModel::saveCSV() {
         qDebug() << "saveCSV: failed to open file" << csvTmpFilename;
     }
     if (csvTmp.exists()) {
+        csv.remove();
         csv.rename(csvBakFilename);
         csvTmp.rename(csvFilename);
         qDebug() << csvTmpFilename << " renamed to " << csvFilename;
