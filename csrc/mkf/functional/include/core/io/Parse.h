@@ -224,16 +224,7 @@ static inline std::vector<QImage> parseImages(const QByteArray& bytes, int offse
         // (width[num_chunks-1] * height[num_chunks-1]) bytes  // QImage::Format_RGB555
         int start = 0;
         for (auto& info : graphInfos) {
-            QImage image = QImage(info.width, info.height, QImage::Format_RGB555);
-            for (int y = 0; y < info.height; y++) {
-                for (int x = 0; x < info.width; x++) {
-                    int index = y * info.width + x;
-                    int headerEnd = header.start_offset;
-                    int colorOffset = start + index * sizeof(int16_t);
-                    QRgb color = parseRGB555(readDataAtOffset<int16_t>(bytes, headerEnd+colorOffset));
-                    image.setPixel(QPoint(x, y), color);
-                }
-            }
+            QImage image = parseImage(bytes.mid(header.start_offset + start), info.width, info.height);
             images.push_back(image);
             start += info.gsize;
         }
