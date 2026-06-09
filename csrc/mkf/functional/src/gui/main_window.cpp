@@ -34,6 +34,7 @@
 #include <qlogging.h>
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
+    resourceModel = new ResourceModel();
     setupUI();
     setupConnections();
     setWindowTitle("MKF File Viewer");
@@ -110,9 +111,6 @@ void MainWindow::openFile() {
     QString filepath = QFileDialog::getOpenFileName(this, "Open MKF File", "", "MKF Files (*.mkf)");
     if (filepath.isEmpty()) {
         return;
-    }
-    if (!resourceModel) {
-        resourceModel = new ResourceModel();
     }
     resourceModel->init(filepath);
     loadFileTree();
