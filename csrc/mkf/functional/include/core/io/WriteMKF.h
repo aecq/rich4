@@ -4,6 +4,11 @@
 #include "core/types/ResourceHeader.h"
 
 static inline void replaceBinary(QFile& inFile, QFile& outFile, const QByteArray& resource, const int index) {
+    // check resource size
+    if (resource.size() > 0xFFFFFFFF) {
+        throw std::runtime_error("replaceResource: resource size out of range");
+    }
+    uint32_t resourceSize = resource.size();
     // check file open
     if (!inFile.isOpen() || !outFile.isOpen()) {
         throw std::runtime_error("replaceResource: file not open");
@@ -37,8 +42,8 @@ static inline void replaceBinary(QFile& inFile, QFile& outFile, const QByteArray
     }
     // resource header
     ResourceHeader newHeader = {
-        resource.size(),
-        resource.size(),
+        resourceSize,
+        resourceSize,
         0,  // ignore
         0,  // ignore
     };
