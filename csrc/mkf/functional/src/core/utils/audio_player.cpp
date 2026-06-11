@@ -1,7 +1,7 @@
-#include "core/utils/media_player.h"
+#include "core/utils/audio_player.h"
 #include <QBuffer>
 
-MediaPlayer::MediaPlayer(QObject *parent) : QObject(parent)
+AudioPlayer::AudioPlayer(QObject *parent) : QObject(parent)
 {
     m_audioOutput = new QAudioOutput(this);
     m_player = new QMediaPlayer(this);
@@ -9,13 +9,13 @@ MediaPlayer::MediaPlayer(QObject *parent) : QObject(parent)
     m_buffer = new QBuffer(this);
 }
 
-MediaPlayer &MediaPlayer::instance()
+AudioPlayer &AudioPlayer::instance()
 {
-    static MediaPlayer* instance = new MediaPlayer();
+    static AudioPlayer* instance = new AudioPlayer();
     return *instance;
 }
 
-void MediaPlayer::play(QByteArray wavData)
+void AudioPlayer::play(QByteArray wavData)
 {
     stop();
     m_buffer = new QBuffer(this);
@@ -25,7 +25,7 @@ void MediaPlayer::play(QByteArray wavData)
     m_player->play();
 }
 
-void MediaPlayer::stop()
+void AudioPlayer::stop()
 {
     m_player->stop();
     m_player->setSourceDevice(nullptr);
@@ -35,7 +35,7 @@ void MediaPlayer::stop()
     }
 }
 
-void MediaPlayer::setVolume(qreal vol)
+void AudioPlayer::setVolume(qreal vol)
 {
     m_audioOutput->setVolume(vol);
 }

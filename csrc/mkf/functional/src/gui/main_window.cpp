@@ -5,7 +5,7 @@
 #include "core/types/resource_header.h"
 #include "core/types/spr_smp_header.h"
 #include "core/utils/resource_model.h"
-#include "core/utils/media_player.h"
+#include "core/utils/audio_player.h"
 #include "gui/graphics_text_window.h"
 #include <QApplication>
 #include <QTreeView>
@@ -122,7 +122,7 @@ void MainWindow::playAudio() {
     if (depth == 1 && resourceModel->getSignature(index.row()).startsWith("RIFF")) {
         statusBar()->showMessage("Playing audio at index:" + QString::number(index.row()));
         QByteArray data = resourceModel->getResource(index.row());
-        MediaPlayer::instance().play(data);
+        AudioPlayer::instance().play(data);
     } else {
         statusBar()->showMessage("Please select an audio resource.");
     }

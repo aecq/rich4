@@ -13,7 +13,7 @@ find_package(Qt6 COMPONENTS Core Core5Compat Gui Widgets Multimedia REQUIRED)
 set(SOURCES
     src/core/utils/cache.cpp
     src/core/utils/resource_model.cpp
-    src/core/utils/media_player.cpp
+    src/core/utils/audio_player.cpp
     src/gui/graphics_text_window.cpp
     src/gui/main_window.cpp
     src/main.cpp
@@ -23,7 +23,7 @@ set(SOURCES
 set(HEADERS
     include/core/utils/cache.h
     include/core/utils/resource_model.h
-    include/core/utils/media_player.h
+    include/core/utils/audio_player.h
     include/gui/graphics_text_window.h
     include/gui/main_window.h
     ../mkf_decompress.h
