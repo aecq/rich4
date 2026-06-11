@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(MkfViewer3)
+project(MkfViewer)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -29,11 +29,11 @@ set(HEADERS
     ../mkf_decompress.h
 )
 
-add_executable(MkfViewer3 ${SOURCES} ${HEADERS})
+add_executable(MkfViewer ${SOURCES} ${HEADERS})
 
-target_include_directories(MkfViewer3 PRIVATE
+target_include_directories(MkfViewer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_link_libraries(MkfViewer3 Qt6::Core Qt6::Core5Compat Qt6::Gui Qt6::Widgets Qt6::Multimedia)
+target_link_libraries(MkfViewer Qt6::Core Qt6::Core5Compat Qt6::Gui Qt6::Widgets Qt6::Multimedia)
