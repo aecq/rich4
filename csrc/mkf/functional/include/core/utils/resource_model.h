@@ -1,9 +1,7 @@
 #pragma once
 
-#include "core/utils/Cache.h"
-#include <QModelIndex>
-#include <qobject.h>
-#include <qtmetamacros.h>
+#include "core/utils/cache.h"
+#include <QObject>
 
 class ResourceModel : public QObject {
     Q_OBJECT

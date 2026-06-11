@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/types/ResourceHeader.h"
-#include "core/types/SPRSMPHeader.h"
+#include "core/types/resource_header.h"
+#include "core/types/spr_smp_header.h"
 #include <QByteArray>
 #include <QModelIndex>
 #include <QRegularExpression>

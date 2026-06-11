@@ -1,6 +1,5 @@
-#include "core/utils/ResourceModel.h"
+#include "core/utils/resource_model.h"
 
-#include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QTextStream>

@@ -1,5 +1,5 @@
-#include "core/utils/Cache.h"
-#include "core/io/Parse.h"
+#include "core/utils/cache.h"
+#include "core/io/parse.h"
 
 #include <QFile>
 

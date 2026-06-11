@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QBuffer>
-#include <QObject>
 #include <QMediaPlayer>
 #include <QAudioOutput>
 

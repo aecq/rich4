@@ -1,24 +1,15 @@
-#include "core/utils/check.h"
-#include "core/io/Parse.h"
-#include "core/io/Write.h"
-#include "core/types/ResourceHeader.h"
-#include "core/types/SPRSMPHeader.h"
-#include "core/utils/ResourceModel.h"
-#include "core/utils/MediaPlayer.h"
-#include "gui/graphics_text_window.h"
 #include "gui/main_window.h"
+#include "core/utils/check.h"
+#include "core/io/parse.h"
+#include "core/io/write.h"
+#include "core/types/resource_header.h"
+#include "core/types/spr_smp_header.h"
+#include "core/utils/resource_model.h"
+#include "core/utils/media_player.h"
+#include "gui/graphics_text_window.h"
 #include <QApplication>
-#include <QSplitter>
 #include <QTreeView>
-#include <QTextEdit>
-#include <QTableView>
-#include <QImage>
-#include <QPixmap>
-#include <QLabel>
-#include <QScrollArea>
-#include <QHeaderView>
 #include <QFileDialog>
-#include <QMessageBox>
 #include <QMenuBar>
 #include <QStatusBar>
 #include <QStandardItemModel>
@@ -27,13 +18,9 @@
 #include <QFile>
 #include <QDir>
 #include <QAction>
-#include <QHBoxLayout>
-#include <QVBoxLayout>
 #include <QProcess>
-#include <QPushButton>
 #include <QToolBar>
-#include <qitemselectionmodel.h>
-#include <qlogging.h>
+#include <QItemSelectionModel>
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     resourceModel = new ResourceModel();

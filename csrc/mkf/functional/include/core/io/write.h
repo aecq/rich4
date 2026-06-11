@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/io/Parse.h"
-#include "core/types/ResourceHeader.h"
+#include "core/io/parse.h"
+#include "core/types/resource_header.h"
 
 static inline void replaceBinary(QFile& inFile, QFile& outFile, const QByteArray& resource, const int index) {
     // check resource size

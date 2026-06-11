@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/utils/ResourceModel.h"
+#include "core/utils/resource_model.h"
 #include <QListWidget>
 #include <QModelIndex>
 #include <QTextEdit>

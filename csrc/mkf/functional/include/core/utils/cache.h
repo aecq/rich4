@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/types/ResourceHeader.h"
+#include "core/types/resource_header.h"
 #include <QByteArray>
 #include <QString>
 #include <vector>

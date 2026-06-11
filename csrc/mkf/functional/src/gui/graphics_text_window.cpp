@@ -1,13 +1,12 @@
-#include "core/io/Parse.h"
-#include "gui/main_window.h"
 #include "gui/graphics_text_window.h"
+#include "core/io/parse.h"
+#include "gui/main_window.h"
 #include <QLabel>
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QSplitter>
 #include <QTextEdit>
 #include <QVBoxLayout>
-#include <qabstractitemmodel.h>
 
 GraphicsTextWindow::GraphicsTextWindow(MainWindow* mainWindow) : QWidget(mainWindow, Qt::Window), m_mainWindow(mainWindow) {
     setupUI();

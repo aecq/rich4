@@ -1,7 +1,7 @@
 #pragma once
 
 // #include "core/utils/Cache.h"
-#include "core/utils/ResourceModel.h"
+#include "core/utils/resource_model.h"
 #include <QFile>
 #include <QMainWindow>
 #include <QStandardItemModel>

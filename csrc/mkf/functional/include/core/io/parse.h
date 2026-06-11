@@ -1,19 +1,16 @@
 #pragma once
 
-#include "core/types/GraphInfo.h"
-#include "core/types/ResourceHeader.h"
-#include "core/types/SPRSMPHeader.h"
-#include "core/utils/Check.h"
-#include <cstdint>
-#include <windows.h>
-#include <qdebug.h>
-#include <qstringview.h>
-#include <vector>
+#include "core/types/graph_info.h"
+#include "core/types/resource_header.h"
+#include "core/types/spr_smp_header.h"
+#include "core/utils/check.h"
 #include <QByteArray>
 #include <QFile>
 #include <QImage>
 #include <QPixmap>
 #include <QTextCodec>
+#include <cstdint>
+#include <vector>
 
 const int PALETTE_SIZE = 256;
 
