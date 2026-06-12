@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/utils/cache.h"
+#include "core/io/parse.h"
 #include <QObject>
 
 class ResourceModel : public QObject {
@@ -10,6 +11,7 @@ public:
     ~ResourceModel();
     void init(const QString& filename);
     void clear();
+    ResourceOffset getOffset(int index);
     ResourceHeader getHeader(int index);
     QString getSignature(int index);
     QByteArray getResource(int index);

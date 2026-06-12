@@ -1,5 +1,5 @@
 #include "core/utils/resource_model.h"
-
+#include "core/io/parse.h"
 #include <QDir>
 #include <QFile>
 #include <QTextStream>
@@ -31,6 +31,8 @@ void ResourceModel::clear() {
     types.clear();
     comments.clear();
 }
+
+ResourceOffset ResourceModel::getOffset(int index) { return cache->getOffset(index); }
 
 ResourceHeader ResourceModel::getHeader(int index) { return cache->getHeader(index); }
 
