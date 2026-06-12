@@ -204,6 +204,9 @@ QString ResourceModel::guessType(int index) {
         case 24576:
             return QString("$128x192");
     }
+    if (index >= 1 && getSignature(index - 1) == "GND") {
+        return QString("MAP");
+    }
     return Cache::unknownSignature();
 }
 
