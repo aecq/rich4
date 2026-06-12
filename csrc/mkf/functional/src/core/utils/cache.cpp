@@ -47,6 +47,10 @@ void Cache::clear() {
     isLoaded.clear();
 }
 
+ResourceOffset Cache::getOffset(int index) {
+    return offsets[index];
+}
+
 ResourceHeader Cache::getHeader(int index) {
     return headers[index];
 }

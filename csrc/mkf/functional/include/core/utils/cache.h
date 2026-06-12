@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/io/parse.h"
 #include "core/types/resource_header.h"
 #include <QByteArray>
 #include <QString>
@@ -11,6 +12,7 @@ public:
     ~Cache();
     void init(const QString& filename);
     void clear();
+    ResourceOffset getOffset(int index);
     ResourceHeader getHeader(int index);
     QString getSignature(int index);
     QByteArray getResource(int index);
@@ -21,7 +23,7 @@ public:
 
 private:
     QString filename;
-    std::vector<int32_t> offsets;
+    std::vector<ResourceOffset> offsets;
     std::vector<ResourceHeader> headers;
     std::vector<QString> signatures;
     std::vector<QByteArray> byteArrays;
