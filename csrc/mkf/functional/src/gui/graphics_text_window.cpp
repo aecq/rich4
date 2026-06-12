@@ -168,6 +168,14 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
                 item->setTextAlignment(Qt::AlignCenter);
                 gallery->addItem(item);
             }
+        } else if (type.startsWith("MAP")) {
+            QByteArray bytes = resourceModel->getResource(index.row());
+            QImage image = drawMapNodeImage(bytes);
+            gallery->addItem(new QListWidgetItem(
+                QIcon(QPixmap::fromImage(image)),
+                QString("Map %1").arg(index.row()),
+                gallery
+            ));
         }
     } else if (depth == 2) {
         QModelIndex parent = index.parent();
