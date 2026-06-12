@@ -252,10 +252,24 @@ void GraphicsTextWindow::onGalleryContextMenu(const QPoint& pos) {
     QAction* selected = menu.exec(gallery->mapToGlobal(pos));
 
     if (selected == exportAction) {
+        ResourceModel* resourceModel = m_mainWindow->getResourceModel();
+        QString basename = resourceModel->getBasename();
+        QModelIndex resourceIndex = m_mainWindow->getTreeView()->currentIndex();
+        int resourceRow = -1;
+        int chunkRow = index;
+        int depth = indexDepth(resourceIndex);
+        if (depth == 1) {
+            resourceRow = resourceIndex.row();
+        } else if (depth == 2) {
+            QModelIndex parent = resourceIndex.parent();
+            resourceRow = parent.row();
+            chunkRow = resourceIndex.row();
+        }
         QString fileName = QFileDialog::getSaveFileName(
             this,
             "Save Image",
-            QString("image_%1.bmp").arg(index),
+            QString("%1%2-%3.bmp").arg(basename)
+                .arg(resourceRow, 4, 10, QChar('0')).arg(chunkRow, 3, 10, QChar('0')),
             "BMP Files (*.bmp);;PNG Files (*.png);;JPEG Files (*.jpg)"
         );
 
