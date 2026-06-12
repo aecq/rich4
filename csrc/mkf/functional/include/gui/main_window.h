@@ -17,6 +17,7 @@ public:
     void treeSelectionChanged(const QModelIndex& current, const QModelIndex& previous);
     // Cache* getCache() { return cache; }
     ResourceModel* getResourceModel() { return resourceModel; }
+    QTreeView* getTreeView() { return treeView; }
     
 private slots:
     void openFile();
