@@ -1,9 +1,11 @@
 #include "gui/graphics_text_window.h"
 #include "core/io/parse.h"
 #include "gui/main_window.h"
+#include <QFileDialog>
 #include <QLabel>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QMenu>
 #include <QSplitter>
 #include <QTextEdit>
 #include <QVBoxLayout>
@@ -53,6 +55,11 @@ void GraphicsTextWindow::setupUI() {
 
     // 7. 分割器初始宽度
     mainSplitter->setSizes({1500, 500});
+
+    // 8. 设置右键菜单
+    gallery->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(gallery, &QListWidget::customContextMenuRequested,
+            this, &GraphicsTextWindow::onGalleryContextMenu);
 }
 
 void GraphicsTextWindow::update(const QModelIndex &index) {
@@ -60,11 +67,13 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
     ResourceModel* resourceModel = m_mainWindow->getResourceModel();
     // Image
     gallery->clear();
+    m_images.clear();
     if (depth == 1) {
         QString sig = resourceModel->getSignature(index.row());
         QString type = resourceModel->getType(index.row());
         if (sig.startsWith("SPR") || sig.startsWith("SMP")) {
             std::vector<QImage> images = parseImages(resourceModel->getResource(index.row()));
+            m_images = images;
             for (size_t i = 0; i < images.size(); i++) {
                 if (!images[i].isNull()) {
                     QPixmap pixmap = QPixmap::fromImage(images[i]);
@@ -104,6 +113,7 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
                 return;
             }
             QImage image = parseImage(bytes, width, height);
+            m_images.push_back(image);
             if (!image.isNull()) {
                 QPixmap pixmap = QPixmap::fromImage(image);
                 QIcon icon(pixmap);
@@ -143,6 +153,7 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
                 return;
             }
             QImage image = parseImage(bytes, width, height, QImage::Format_Grayscale8, true);
+            m_images.push_back(image);
             if (!image.isNull()) {
                 QPixmap pixmap = QPixmap::fromImage(image);
                 QIcon icon(pixmap);
@@ -163,6 +174,7 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
         QString sig = resourceModel->getSignature(parent.row());
         if ((sig.startsWith("SPR") || sig.startsWith("SMP"))) {
             std::vector<QImage> images = parseImages(resourceModel->getResource(parent.row()));
+            m_images = images;
             if (index.row() < images.size() && !images[index.row()].isNull()) {
                 QPixmap pixmap = QPixmap::fromImage(images[index.row()]);
                 QIcon icon(pixmap);
@@ -226,4 +238,30 @@ void GraphicsTextWindow::onTreeRowChanged(const QModelIndex &index) {
         return;
     }
     update(index);
+}
+
+void GraphicsTextWindow::onGalleryContextMenu(const QPoint& pos) {
+    QListWidgetItem* item = gallery->itemAt(pos);
+    if (!item) return;
+
+    int index = gallery->row(item);
+    if (index < 0 || index >= m_images.size()) return;
+
+    QMenu menu(this);
+    QAction* exportAction = menu.addAction("Export Image");
+    QAction* selected = menu.exec(gallery->mapToGlobal(pos));
+
+    if (selected == exportAction) {
+        QString fileName = QFileDialog::getSaveFileName(
+            this,
+            "Save Image",
+            QString("image_%1.bmp").arg(index),
+            "BMP Files (*.bmp);;PNG Files (*.png);;JPEG Files (*.jpg)"
+        );
+
+        if (!fileName.isEmpty()) {
+            QImage image = m_images[index];
+            image.save(fileName);
+        }
+    }
 }

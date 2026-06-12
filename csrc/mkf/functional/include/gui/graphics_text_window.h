@@ -1,10 +1,12 @@
 #pragma once
 
 #include "core/utils/resource_model.h"
+#include <QImage>
 #include <QListWidget>
 #include <QModelIndex>
 #include <QTextEdit>
 #include <QWidget>
+#include <vector>
 class MainWindow;
 
 class GraphicsTextWindow : public QWidget {
@@ -20,9 +22,11 @@ private:
 
 public slots:
     void onTreeRowChanged(const QModelIndex &index);
+    void onGalleryContextMenu(const QPoint& pos);
 
 private:
     MainWindow* m_mainWindow;
+    std::vector<QImage> m_images;
 
     QTextEdit* textEdit;
     QListWidget* gallery;
