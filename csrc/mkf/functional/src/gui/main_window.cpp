@@ -306,9 +306,12 @@ void MainWindow::loadFileTree() {
             SPRSMPHeader header = parseSPRSMPHeader(bytes);
             // SPR || SMP Info: sig (num_chunks) uncsize ≥ csize
             row << new QStandardItem(QString::number(i)/*ReadOnly*/)
-                << new QStandardItem(QString("%1 (%2) %3 ≥ %4 0x%5")
-                    .arg(sig).arg(QString::number(header.num_chunks))
-                    .arg(QString::number(uncompressed)).arg(QString::number(compressed)).arg(resourceModel->getOffset(i), 8, 16, QChar('0'))/*ReadOnly*/);
+                << new QStandardItem(QString("(%1) %2 ≥ %3 %4 0x%5")
+                    .arg(QString::number(header.num_chunks))
+                    .arg(QString::number(uncompressed))
+                    .arg(QString::number(compressed))
+                    .arg(sig)
+                    .arg(resourceModel->getOffset(i), 8, 16, QChar('0'))/*ReadOnly*/);
             QStandardItem *rowItem = row[0];
             std::vector<GraphInfo> graphInfos = parseGraphInfos(bytes);
             for (int j = 0; j < graphInfos.size(); j++) {
@@ -323,9 +326,11 @@ void MainWindow::loadFileTree() {
         } else {
             // Other Info: sig uncsize ≥ csize
             row << new QStandardItem(QString::number(i)/*ReadOnly*/)
-                << new QStandardItem(QString("%1 %2 ≥ %3 0x%4").arg(sig)
+                << new QStandardItem(QString("%1 ≥ %2 %3 0x%4")
                     .arg(QString::number(uncompressed))
-                    .arg(QString::number(compressed)).arg(resourceModel->getOffset(i), 8, 16, QChar('0'))/*ReadOnly*/);
+                    .arg(QString::number(compressed))
+                    .arg(sig)
+                    .arg(resourceModel->getOffset(i), 8, 16, QChar('0'))/*ReadOnly*/);
         }
         row << new QStandardItem(resourceModel->getType(i)) << new QStandardItem(resourceModel->getComment(i));
         rootItem->appendRow(row);
