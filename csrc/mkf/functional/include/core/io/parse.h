@@ -167,17 +167,63 @@ static inline QVector<QRgb> parsePalette(const QByteArray& bytes, int offset=0) 
     return palette;
 }
 
+static inline QImage stretchGrayRange(const QImage& src, uint8_t minV, uint8_t maxV)
+{
+    if (src.format() != QImage::Format_Grayscale8)
+        return src;
+
+    // 防止分母0（全同色）
+    if (minV == maxV)
+        return src.copy();
+
+    QImage dst(src.size(), QImage::Format_Grayscale8);
+    const uchar* srcBits = src.bits();
+    uchar* dstBits = dst.bits();
+    int srcBpl = src.bytesPerLine();
+    int dstBpl = dst.bytesPerLine();
+    int w = src.width();
+    int h = src.height();
+
+    float scale = 255.0f / (maxV - minV);
+
+    for (int y = 0; y < h; ++y)
+    {
+        const uchar* srcLine = srcBits + y * srcBpl;
+        uchar* dstLine = dstBits + y * dstBpl;
+        for (int x = 0; x < w; ++x)
+        {
+            float val = (srcLine[x] - minV) * scale;
+            dstLine[x] = static_cast<uchar>(qBound(0.0f, val, 255.0f));
+        }
+    }
+    return dst;
+}
+
 // ====================
-//  parseImage: 从 const QByteArray& bytes 中解析图像块. 图像块大小为 width * height * 2 bytes.
+//  parseImage: 从 const QByteArray& bytes 中解析图像块
 // ====================
-static inline QImage parseImage(const QByteArray& bytes, const int& width, const int& height) {
-    QImage image(width, height, QImage::Format_RGB555);
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            const int index = y * width + x;
-            const int colorOffset = index * sizeof(int16_t);
-            QRgb color = parseRGB555(readDataAtOffset<int16_t>(bytes, colorOffset));
-            image.setPixel(QPoint(x, y), color);
+static inline QImage parseImage(const QByteArray& bytes, const int& width, const int& height, QImage::Format format = QImage::Format_RGB555, bool stretchGray=false) {
+    QImage image(width, height, format);
+    if (format == QImage::Format_RGB555) {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                const int index = y * width + x;
+                const int colorOffset = index * sizeof(int16_t);
+                QRgb color = parseRGB555(readDataAtOffset<int16_t>(bytes, colorOffset));
+                image.setPixel(QPoint(x, y), color);
+            }
+        }
+    } else if (format == QImage::Format_Grayscale8) {
+        uint8_t minV = 255;
+        uint8_t maxV = 0;
+        memcpy(image.bits(), bytes.constData(), width * height);
+        for (int i = 0; i < bytes.size(); i++) {
+            uint8_t v = bytes[i];
+            if (v < minV) minV = v;
+            if (v > maxV) maxV = v;
+        }
+        if (stretchGray) {
+            image = stretchGrayRange(image, minV, maxV);
         }
     }
     return image;
