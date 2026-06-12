@@ -61,7 +61,7 @@ QString Cache::getSignature(int index) {
     if (signatures[index].startsWith("RIFF")) {
         return QString("RIFF");
     }
-    return QString("...");
+    return unknownSignature();
 }
 
 QByteArray Cache::getResource(int index) {
@@ -91,4 +91,9 @@ size_t Cache::n() {
 
 QString Cache::getFilename() {
     return filename;
+}
+
+const QString& Cache::unknownSignature() {
+    static const QString unknown = QString("...");
+    return unknown;
 }

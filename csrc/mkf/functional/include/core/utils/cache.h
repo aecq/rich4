@@ -17,6 +17,8 @@ public:
     size_t n();
     QString getFilename();
 
+    static const QString& unknownSignature();
+
 private:
     QString filename;
     std::vector<int32_t> offsets;
