@@ -305,32 +305,28 @@ void MainWindow::loadFileTree() {
             SPRSMPHeader header = parseSPRSMPHeader(bytes);
             // SPR || SMP Info: sig (num_chunks) uncsize ≥ csize
             row << new QStandardItem(QString::number(i)/*ReadOnly*/)
-                << new QStandardItem(QString("%1 (%2) %3 ≥ %4")
+                << new QStandardItem(QString("%1 (%2) %3 ≥ %4 0x%5")
                     .arg(sig).arg(QString::number(header.num_chunks))
-                    .arg(QString::number(uncompressed)).arg(QString::number(compressed))/*ReadOnly*/)
-                << new QStandardItem(resourceModel->getType(i)/*ReadOnly*/)
-                << new QStandardItem(resourceModel->getComment(i));
+                    .arg(QString::number(uncompressed)).arg(QString::number(compressed)).arg(resourceModel->getOffset(i), 8, 16, QChar('0'))/*ReadOnly*/);
             QStandardItem *rowItem = row[0];
             std::vector<GraphInfo> graphInfos = parseGraphInfos(bytes);
             for (int j = 0; j < graphInfos.size(); j++) {
                 QList<QStandardItem*> chunkRow;
                 // Chunk Info: w x h (x, y)
                 chunkRow << new QStandardItem(QString::number(j)/*ReadOnly*/)
-                         << new QStandardItem(QString("%1 x %2 (%3, %4)")
+                         << new QStandardItem(QString("%1 x %2 (%3, %4) 0x%5")
                             .arg(QString::number(graphInfos[j].width)).arg(QString::number(graphInfos[j].height))
-                            .arg(QString::number(graphInfos[j].x)).arg(QString::number(graphInfos[j].y)/*ReadOnly*/))
-                         << new QStandardItem(""/*ReadOnly*/)
-                         << new QStandardItem(""/*ReadOnly*/);
+                            .arg(QString::number(graphInfos[j].x)).arg(QString::number(graphInfos[j].y)/*ReadOnly*/));
                 rowItem->appendRow(chunkRow);
             }
         } else {
             // Other Info: sig uncsize ≥ csize
             row << new QStandardItem(QString::number(i)/*ReadOnly*/)
-                << new QStandardItem(QString("%1 %2 ≥ %3").arg(sig)
-                    .arg(QString::number(uncompressed)).arg(QString::number(compressed))/*ReadOnly*/)
-                << new QStandardItem(resourceModel->getType(i))
-                << new QStandardItem(resourceModel->getComment(i));
+                << new QStandardItem(QString("%1 %2 ≥ %3 0x%4").arg(sig)
+                    .arg(QString::number(uncompressed))
+                    .arg(QString::number(compressed)).arg(resourceModel->getOffset(i), 8, 16, QChar('0'))/*ReadOnly*/);
         }
+        row << new QStandardItem(resourceModel->getType(i)) << new QStandardItem(resourceModel->getComment(i));
         rootItem->appendRow(row);
     }
     treeView->expandToDepth(0);
