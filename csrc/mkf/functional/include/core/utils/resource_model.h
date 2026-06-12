@@ -31,7 +31,7 @@ public:
 
     QString getType(int index);
     QString getComment(int index);
-
+    QString guessType(int index);
     void exportBinary(int i, QString filename);
 
 private:

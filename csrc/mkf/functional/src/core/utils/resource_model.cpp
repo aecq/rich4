@@ -1,5 +1,6 @@
 #include "core/utils/resource_model.h"
 #include "core/io/parse.h"
+#include "core/types/resource_header.h"
 #include <QDir>
 #include <QFile>
 #include <QTextStream>
@@ -100,7 +101,7 @@ void ResourceModel::loadCSV() {
         for (int i = 0; i < cache->n(); i++) {
             csv.write(
             QString("%1,%2,%3\n")
-                    .arg(i).arg(cache->getSignature(i)).arg("")
+                    .arg(i).arg(guessType(i)).arg("")
                     .toStdString().c_str()
             );
         }
@@ -171,6 +172,40 @@ void ResourceModel::saveCSV() {
 QString ResourceModel::getType(int index) { return types[index]; }
 
 QString ResourceModel::getComment(int index) { return comments[index]; }
+
+QString ResourceModel::guessType(int index) {
+    if (index < 0 || index >= n()) {
+        qDebug() << "guessType: index out of range";
+        return QString();
+    }
+    QString sig = getSignature(index);
+    if (sig != Cache::unknownSignature()) {
+        return sig;
+    }
+    if (getResource(index).left(1024).contains(".FLC")) {
+        return "FLC";
+    }
+    ResourceHeader header = getHeader(index);
+    switch (header.uncompressed_size) {
+        // Data 2 bytes per pixel
+        case 80000:
+            return QString("!200x200");
+        case 194776:
+            return QString("!388x251");
+        case 84480:
+            return QString("!165x256");
+        case 614400:  // Data and jump
+            return QString("!640x480");
+        // Panel 1 byte per pixel
+        case 4824:
+            return QString("$72x67");
+        case 307200:
+            return QString("$640x480");
+        case 24576:
+            return QString("$128x192");
+    }
+    return Cache::unknownSignature();
+}
 
 void ResourceModel::exportBinary(int i, QString filename) {
     if (!cache) {
