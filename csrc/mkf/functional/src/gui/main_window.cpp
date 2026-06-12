@@ -72,6 +72,7 @@ void MainWindow::createMenuBar() {
     playFLCAction = showMenu->addAction("Play FLC");
     playFLCAction->setShortcut(QKeySequence::Refresh);
     connect(playFLCAction, &QAction::triggered, this, &MainWindow::playFLC);
+    playFLCAction->setEnabled(false);
 
     QAction* graphicsTextAction = showMenu->addAction("Graphics Text");
     connect(graphicsTextAction, &QAction::triggered, this, &MainWindow::openGraphicsTextWindow);
@@ -355,7 +356,8 @@ void MainWindow::updatePlayActionState() {
     QModelIndex index = selectionModel->currentIndex();
 
     // 默认不可用
-    bool enable = false;
+    bool enableRIFF = false;
+    bool enableFLC = false;
 
     if (index.isValid()) {
         // 计算深度
@@ -363,12 +365,15 @@ void MainWindow::updatePlayActionState() {
 
         // 判断条件
         if (depth == 1 && resourceModel->getSignature(index.row()).startsWith("RIFF")) {
-            enable = true;
+            enableRIFF = true;
+        } else if (depth == 1 && resourceModel->getType(index.row()) == "FLC") {
+            enableFLC = true;
         }
     }
 
     // 设置按钮是否可用
-    playAudioAction->setEnabled(enable);
+    playAudioAction->setEnabled(enableRIFF);
+    playFLCAction->setEnabled(enableFLC);
 }
 
 void MainWindow::treeSelectionChanged(const QModelIndex& current, const QModelIndex& previous) {
