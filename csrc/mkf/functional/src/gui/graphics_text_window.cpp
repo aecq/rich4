@@ -118,6 +118,45 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
                 item->setTextAlignment(Qt::AlignCenter);
                 gallery->addItem(item);
             }
+        } else if (type.startsWith("$")) {
+            // #region repeated code TODO: refactor this code
+            int lenType = type.length();
+            int indexOfX = type.indexOf("x");
+            if (indexOfX == -1) {
+                qDebug() << "indexOfX == -1";
+                return;
+            }
+            QString widthStr = type.right(lenType - 1).left(indexOfX - 1);
+            QString heightStr = type.right(lenType - indexOfX - 1);
+            uint width = widthStr.toUInt();
+            uint height = heightStr.toUInt();
+            if (width <= 0 || height <= 0) {
+                QString message = QString("width(%1) height(%2) is invalid").arg(width).arg(height);
+                emit statusMessage(message);
+                return;
+            }
+            // #endregion repeated code
+            QByteArray bytes = resourceModel->getResource(index.row());
+            if (width * height != bytes.size()) {
+                QString message =QString("%1 x %2 != %3. width * height != bytes.size()").arg(width).arg(height).arg(bytes.size());
+                emit statusMessage(message);
+                return;
+            }
+            QImage image = parseImage(bytes, width, height, QImage::Format_Grayscale8, true);
+            if (!image.isNull()) {
+                QPixmap pixmap = QPixmap::fromImage(image);
+                QIcon icon(pixmap);
+                QListWidgetItem* item = new QListWidgetItem(
+                    icon,
+                    QString("%1: %2x%3")
+                        .arg(index.row())
+                        .arg(width)
+                        .arg(height),
+                    gallery
+                );
+                item->setTextAlignment(Qt::AlignCenter);
+                gallery->addItem(item);
+            }
         }
     } else if (depth == 2) {
         QModelIndex parent = index.parent();
