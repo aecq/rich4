@@ -61,6 +61,9 @@ QString Cache::getSignature(int index) {
     if (signatures[index].startsWith("RIFF")) {
         return QString("RIFF");
     }
+    if (signatures[index].startsWith("GND")) {
+        return QString("GND");
+    }
     return unknownSignature();
 }
 
