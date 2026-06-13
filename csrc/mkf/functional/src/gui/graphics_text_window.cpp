@@ -2,6 +2,8 @@
 #include "core/io/parse.h"
 #include "gui/main_window.h"
 #include <QFileDialog>
+#include <QGraphicsEllipseItem>
+#include <QGraphicsTextItem>
 #include <QLabel>
 #include <QListWidget>
 #include <QListWidgetItem>
@@ -9,6 +11,7 @@
 #include <QSplitter>
 #include <QTextEdit>
 #include <QVBoxLayout>
+#include <QWheelEvent>
 
 GraphicsTextWindow::GraphicsTextWindow(MainWindow* mainWindow) : QWidget(mainWindow, Qt::Window), m_mainWindow(mainWindow) {
     setupUI();
@@ -16,6 +19,19 @@ GraphicsTextWindow::GraphicsTextWindow(MainWindow* mainWindow) : QWidget(mainWin
 }
 
 GraphicsTextWindow::~GraphicsTextWindow() {
+}
+
+bool GraphicsTextWindow::eventFilter(QObject* obj, QEvent* event) {
+    if (obj == mapView && event->type() == QEvent::Wheel) {
+        QWheelEvent* wheelEvent = static_cast<QWheelEvent*>(event);
+        if (wheelEvent->modifiers() & Qt::ControlModifier) {
+            double factor = wheelEvent->angleDelta().y() > 0 ? 1.15 : 1.0/1.15;
+            mapView->scale(factor, factor);
+            wheelEvent->accept();
+            return true;
+        }
+    }
+    return QWidget::eventFilter(obj, event);
 }
 
 void GraphicsTextWindow::setupUI() {
@@ -52,6 +68,18 @@ void GraphicsTextWindow::setupUI() {
     gallery->setViewMode(QListWidget::IconMode);
     gallery->setIconSize(QSize(1280, 960));
     leftLayout->addWidget(gallery);
+    // 在 gallery 创建后添加
+    mapView = new QGraphicsView(leftPanel);
+    mapScene = new QGraphicsScene(mapView);
+    mapView->setScene(mapScene);
+    mapView->setDragMode(QGraphicsView::ScrollHandDrag);     // 拖拽平移
+    mapView->setInteractive(true);
+    mapView->setRenderHint(QPainter::Antialiasing);
+    mapView->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    mapView->setResizeAnchor(QGraphicsView::AnchorUnderMouse);
+    mapView->installEventFilter(this);  // 安装事件过滤器
+    mapView->hide();
+    leftLayout->addWidget(mapView);
 
     // 7. 分割器初始宽度
     mainSplitter->setSizes({1500, 500});
@@ -66,6 +94,8 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
     int depth = indexDepth(index);
     ResourceModel* resourceModel = m_mainWindow->getResourceModel();
     // Image
+    if (mapView) mapView->hide();
+    gallery->show();
     gallery->clear();
     m_images.clear();
     if (depth == 1) {
@@ -169,13 +199,62 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
                 gallery->addItem(item);
             }
         } else if (type.startsWith("MAP")) {
+            // 切换显示模式
+            gallery->hide();
+            mapView->show();
+
+            // 解析节点
             QByteArray bytes = resourceModel->getResource(index.row());
-            QImage image = drawMapNodeImage(bytes);
-            gallery->addItem(new QListWidgetItem(
-                QIcon(QPixmap::fromImage(image)),
-                QString("Map %1").arg(index.row()),
-                gallery
-            ));
+            m_mapNodes = parseMapNodes(bytes, 0);
+            mapScene->clear();
+
+            if (m_mapNodes.empty()) return;
+
+            // // 计算缩放因子和场景范围
+            int margin = 50;
+            int sceneSize = 800;  // 场景大小
+
+            // 找坐标范围
+            int minX = INT_MAX, maxX = INT_MIN;
+            int minY = INT_MAX, maxY = INT_MIN;
+            for (const auto& node : m_mapNodes) {
+                if (node.x < minX) minX = node.x;
+                if (node.x > maxX) maxX = node.x;
+                if (node.y < minY) minY = node.y;
+                if (node.y > maxY) maxY = node.y;
+            }
+
+            float scaleX = (sceneSize - 2*margin) / float(maxX - minX + 1);
+            float scaleY = (sceneSize - 2*margin) / float(maxY - minY + 1);
+            float scale = std::min(scaleX, scaleY);
+
+            // 创建每个节点的 item
+            for (size_t i = 0; i < m_mapNodes.size(); i++) {
+                const MapNode& node = m_mapNodes[i];
+
+                // 坐标转换
+                float x = margin + (node.x - minX) * scale;
+                float y = margin + (node.y - minY) * scale;
+
+                // 解析名称
+                int indexOfNull = sizeof(node.name);
+                for (; indexOfNull >= 2 && node.name[indexOfNull - 2] == 0 && node.name[indexOfNull - 1] == 0; indexOfNull -= 2) { /* dummy */ }
+
+                // 创建文本 item
+                if (indexOfNull > 0) {
+                    QString name = parseBig5Simple(QByteArray::fromRawData(node.name, indexOfNull), indexOfNull);
+                    QGraphicsTextItem* textItem = mapScene->addText(name);
+                    textItem->setPos(x, y);
+                    textItem->setDefaultTextColor(node.special > 0 ? Qt::cyan : Qt::gray);
+                }
+
+                // 可选：添加点标记
+                QGraphicsEllipseItem* dot = mapScene->addEllipse(x-3, y-3, 6, 6);
+                dot->setBrush(node.special > 0 ? Qt::cyan : Qt::gray);
+            }
+
+            mapScene->setSceneRect(0, 0, sceneSize, sceneSize);
+            mapView->fitInView(mapScene->sceneRect(), Qt::KeepAspectRatio);
         }
     } else if (depth == 2) {
         QModelIndex parent = index.parent();
