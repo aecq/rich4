@@ -426,9 +426,9 @@ static inline QImage drawMapNodeImage(const QByteArray& bytes, int offset=0) {
         int y = oy + m * node.y * (h - oy);
         QString s = parseBig5Simple(bytes.mid(
             offset + sizeof(MapDataHeader) + i * sizeof(MapNode) + sizeof(node.x) + sizeof(node.y),
-            sizeof(node.n)
-        ), sizeof(node.n));
-        if (node.s > 0) {
+            sizeof(node.name)
+        ), sizeof(node.name));
+        if (node.special > 0) {
             drawSolidPointPixel(image, x, y, 2, QColorConstants::Cyan.rgb());
         } else {
             drawSolidPointPixel(image, x, y, 2, QColorConstants::Gray.rgb());
