@@ -15,6 +15,7 @@ set(SOURCES
     src/core/utils/resource_model.cpp
     src/core/utils/audio_player.cpp
     src/gui/graphics_text_window.cpp
+    src/gui/map_graphics_view.cpp
     src/gui/main_window.cpp
     src/main.cpp
     ../mkf_decompress.c
@@ -25,6 +26,7 @@ set(HEADERS
     include/core/utils/resource_model.h
     include/core/utils/audio_player.h
     include/gui/graphics_text_window.h
+    include/gui/map_graphics_view.h
     include/gui/main_window.h
     ../mkf_decompress.h
 )
