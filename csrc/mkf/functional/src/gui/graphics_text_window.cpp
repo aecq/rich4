@@ -192,51 +192,63 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
             // 解析节点
             QByteArray bytes = resourceModel->getResource(index.row());
             m_mapNodes = parseMapNodes(bytes, 0);
+            int count = 0;
+            for (int i = 0; i < resourceModel->n(); i++) {
+                if (resourceModel->getSignature(i).startsWith("GND")) {
+                    count++;
+                } else if (resourceModel->getSignature(i).startsWith("SMP") || resourceModel->getSignature(i).startsWith("SPR")) {
+                    break;
+                }
+            }
+            std::vector<QImage> images = parseImages(resourceModel->getResource(3 * count));
+
             mapScene->clear();
 
             if (m_mapNodes.empty()) return;
 
             // // 计算缩放因子和场景范围
-            int margin = 50;
-            int sceneSize = 800;  // 场景大小
+            // int margin = 50;
+            int sceneSize = 2300;  // 场景大小
 
-            // 找坐标范围
-            int minX = INT_MAX, maxX = INT_MIN;
-            int minY = INT_MAX, maxY = INT_MIN;
-            for (const auto& node : m_mapNodes) {
-                if (node.x < minX) minX = node.x;
-                if (node.x > maxX) maxX = node.x;
-                if (node.y < minY) minY = node.y;
-                if (node.y > maxY) maxY = node.y;
-            }
-
-            float scaleX = (sceneSize - 2*margin) / float(maxX - minX + 1);
-            float scaleY = (sceneSize - 2*margin) / float(maxY - minY + 1);
-            float scale = std::min(scaleX, scaleY);
+            float factor = 1.0f * mapView->width() / sceneSize;
+            mapView->scale(factor, factor);
 
             // 创建每个节点的 item
             for (size_t i = 0; i < m_mapNodes.size(); i++) {
                 const MapNode& node = m_mapNodes[i];
 
                 // 坐标转换
-                float x = margin + (node.x - minX) * scale;
-                float y = margin + (node.y - minY) * scale;
+                float x = node.x;
+                float y = node.y;
 
                 // 解析名称
                 int indexOfNull = sizeof(node.name);
                 for (; indexOfNull >= 2 && node.name[indexOfNull - 2] == 0 && node.name[indexOfNull - 1] == 0; indexOfNull -= 2) { /* dummy */ }
 
+                // 添加图片 item
+                if ((node.special > 0 && node.chunk < images.size() && !images[node.chunk].isNull())  // 特殊节点
+                    || (node.special <= 0 && 0 < node.chunk && node.chunk < images.size())  // 非特殊节点有图片
+                ) {
+                    QPixmap pixmap = QPixmap::fromImage(images[node.chunk]);
+                    QBitmap mask = pixmap.createMaskFromColor(Qt::black);
+                    pixmap.setMask(mask);
+                    QGraphicsPixmapItem* pixmapItem = mapScene->addPixmap(pixmap);
+                    pixmapItem->setPos(x - images[node.chunk].width() / 2, y - images[node.chunk].height() / 2);
+                }
+
                 // 创建文本 item
                 if (indexOfNull > 0) {
                     QString name = parseBig5Simple(QByteArray::fromRawData(node.name, indexOfNull), indexOfNull);
                     QGraphicsTextItem* textItem = mapScene->addText(name);
-                    textItem->setPos(x, y);
+                    textItem->setPos(x - textItem->boundingRect().width() / 2, y + ((node.special > 0) ? images[node.chunk].height() / 2 : 0));
                     textItem->setDefaultTextColor(node.special > 0 ? Qt::cyan : Qt::gray);
                 }
 
-                // 可选：添加点标记
-                QGraphicsEllipseItem* dot = mapScene->addEllipse(x-3, y-3, 6, 6);
-                dot->setBrush(node.special > 0 ? Qt::cyan : Qt::gray);
+                // 非特殊节点没有图片时添加点标记
+                if (node.special <= 0 && node.chunk <= 0) {
+                    QGraphicsEllipseItem* dot = mapScene->addEllipse(x-3, y-3, 6, 6);
+                    dot->setBrush(Qt::gray);
+                }
             }
 
             mapScene->setSceneRect(0, 0, sceneSize, sceneSize);
