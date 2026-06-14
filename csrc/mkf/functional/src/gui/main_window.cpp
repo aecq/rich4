@@ -326,7 +326,7 @@ void MainWindow::loadFileTree() {
                 QList<QStandardItem*> chunkRow;
                 // Chunk Info: w x h (x, y)
                 chunkRow << new QStandardItem(QString::number(j)/*ReadOnly*/)
-                         << new QStandardItem(QString("%1 x %2 (%3, %4) 0x%5")
+                         << new QStandardItem(QString("%1 x %2 (%3, %4)")
                             .arg(QString::number(graphInfos[j].width)).arg(QString::number(graphInfos[j].height))
                             .arg(QString::number(graphInfos[j].x)).arg(QString::number(graphInfos[j].y)/*ReadOnly*/));
                 rowItem->appendRow(chunkRow);
