@@ -277,6 +277,21 @@ static inline std::vector<QImage> parseImages(const QByteArray& bytes, int offse
 }
 
 // ====================
+//  indexOfNull: 查找 const QByteArray& bytes 中最后一个双字节 null 字符 (0x00 0x00) 的索引
+// ====================
+static inline int indexOfNull(const QByteArray& bytes) {
+    if (bytes.isEmpty()) {
+        return -1;
+    }
+    if (bytes.size() & 1) {
+        return -1;
+    }
+    int i = bytes.size();
+    for (; i >= 2 && bytes[i - 2] == 0 && bytes[i - 1] == 0; i -= 2) { /* dummy */ }
+    return i;
+}
+
+// ====================
 //  parseBig5Simple(bytes, size): 从 const QByteArray& bytes 中解析 Big5 编码的文本
 // ====================
 static inline QString parseBig5Simple(const QByteArray& bytes, size_t size) {
@@ -285,6 +300,13 @@ static inline QString parseBig5Simple(const QByteArray& bytes, size_t size) {
     }
     QTextCodec* codec = QTextCodec::codecForName("Big5");
     return codec->toUnicode(bytes.left(size));
+}
+
+// ====================
+//  parseBig5Trim(bytes): 从 const QByteArray& bytes 中解析 Big5 编码的文本，自动移除尾随 null 字符
+// ====================
+static inline QString parseBig5Trim(const QByteArray& bytes) {
+    return parseBig5Simple(bytes, indexOfNull(bytes));
 }
 
 // ====================
