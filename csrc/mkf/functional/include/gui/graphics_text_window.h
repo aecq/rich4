@@ -25,6 +25,7 @@ private:
     QString paletteHTML(const QModelIndex &index, ResourceModel* resourceModel);
 
     void displayMap(const QModelIndex& index, ResourceModel* resourceModel);
+    void displayMapText(const QModelIndex& index, ResourceModel* resourceModel);
 
 public slots:
     void onTreeRowChanged(const QModelIndex &index);

@@ -222,24 +222,7 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
         } else if (sig.startsWith("SMP") || sig.startsWith("RIFF")) {
             textEdit->setPlainText(sig);
         } else if (type.startsWith("MAP")) {
-            QString text;
-            text += type;
-            text += "\nScale: CTRL + Wheel";
-            text += QString("\nMap Node Count: %1").arg(m_mapNodes.size()) + "\n";
-            for (int i = 0; i < m_mapNodes.size(); i++) {
-                text += QString("\n%1 (%2, %3) %4: %5")
-                    .arg(i, 3, 10, QChar(' '))
-                    .arg(m_mapNodes[i].x)
-                    .arg(m_mapNodes[i].y)
-                    .arg(m_mapNodes[i].type, 4, 10, QChar(' '))
-                    .arg(parseBig5Trim(QByteArray::fromRawData(m_mapNodes[i].name, sizeof(MapNode::name))));
-                text += QString(" %1 %2 %3 %4\n")
-                    .arg(m_mapNodes[i].neighbors[0], 2, 10, QChar(' '))
-                    .arg(m_mapNodes[i].neighbors[1], 2, 10, QChar(' '))
-                    .arg(m_mapNodes[i].neighbors[2], 2, 10, QChar(' '))
-                    .arg(m_mapNodes[i].neighbors[3], 2, 10, QChar(' '));
-            }
-            textEdit->setPlainText(text);
+            displayMapText(index, resourceModel);
         } else {
             textEdit->setPlainText(
                 parseBig5(resourceModel->getResource(index.row()).left(2 * 1024)));
@@ -353,6 +336,27 @@ void GraphicsTextWindow::displayMap(const QModelIndex& index, ResourceModel* res
 
     mapScene->setSceneRect(0, 0, sceneSize, sceneSize);
     mapView->fitInView(mapScene->sceneRect(), Qt::KeepAspectRatio);
+}
+
+void GraphicsTextWindow::displayMapText(const QModelIndex& index, ResourceModel* resourceModel) {
+    QString text;
+    text += resourceModel->getType(index.row());
+    text += "\nScale: CTRL + Wheel";
+    text += QString("\nMap Node Count: %1").arg(m_mapNodes.size()) + "\n";
+    for (int i = 0; i < m_mapNodes.size(); i++) {
+        text += QString("\n%1 (%2, %3) %4: %5")
+            .arg(i, 3, 10, QChar(' '))
+            .arg(m_mapNodes[i].x)
+            .arg(m_mapNodes[i].y)
+            .arg(m_mapNodes[i].type, 4, 10, QChar(' '))
+            .arg(parseBig5Trim(QByteArray::fromRawData(m_mapNodes[i].name, sizeof(MapNode::name))));
+        text += QString(" %1 %2 %3 %4\n")
+            .arg(m_mapNodes[i].neighbors[0], 2, 10, QChar(' '))
+            .arg(m_mapNodes[i].neighbors[1], 2, 10, QChar(' '))
+            .arg(m_mapNodes[i].neighbors[2], 2, 10, QChar(' '))
+            .arg(m_mapNodes[i].neighbors[3], 2, 10, QChar(' '));
+    }
+    textEdit->setPlainText(text);
 }
 
 void GraphicsTextWindow::onTreeRowChanged(const QModelIndex &index) {
