@@ -226,26 +226,28 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
                 for (; indexOfNull >= 2 && node.name[indexOfNull - 2] == 0 && node.name[indexOfNull - 1] == 0; indexOfNull -= 2) { /* dummy */ }
 
                 // 添加图片 item
-                if ((node.special > 0 && node.chunk < images.size() && !images[node.chunk].isNull())  // 特殊节点
-                    || (node.special <= 0 && 0 < node.chunk && node.chunk < images.size())  // 非特殊节点有图片
+                int chunkOffset = type.mid(3, type.length() - 3).toInt();
+                int chunk = node.chunk + chunkOffset;
+                if ((node.special > 0 && chunk < images.size() && !images[chunk].isNull())  // 特殊节点
+                    || (node.special <= 0 && 0 < chunk && chunk < images.size())  // 非特殊节点有图片
                 ) {
-                    QPixmap pixmap = QPixmap::fromImage(images[node.chunk]);
+                    QPixmap pixmap = QPixmap::fromImage(images[chunk]);
                     QBitmap mask = pixmap.createMaskFromColor(Qt::black);
                     pixmap.setMask(mask);
                     QGraphicsPixmapItem* pixmapItem = mapScene->addPixmap(pixmap);
-                    pixmapItem->setPos(x - images[node.chunk].width() / 2, y - images[node.chunk].height() / 2);
+                    pixmapItem->setPos(x - images[chunk].width() / 2, y - images[chunk].height() / 2);
                 }
 
                 // 创建文本 item
                 if (indexOfNull > 0) {
                     QString name = parseBig5Simple(QByteArray::fromRawData(node.name, indexOfNull), indexOfNull);
                     QGraphicsTextItem* textItem = mapScene->addText(name);
-                    textItem->setPos(x - textItem->boundingRect().width() / 2, y + ((node.special > 0) ? images[node.chunk].height() / 2 : 0));
+                    textItem->setPos(x - textItem->boundingRect().width() / 2, y + ((node.special > 0) ? images[chunk].height() / 2 : 0));
                     textItem->setDefaultTextColor(node.special > 0 ? Qt::cyan : Qt::gray);
                 }
 
                 // 非特殊节点没有图片时添加点标记
-                if (node.special <= 0 && node.chunk <= 0) {
+                if (node.special <= 0 && chunk <= 0) {
                     QGraphicsEllipseItem* dot = mapScene->addEllipse(x-3, y-3, 6, 6);
                     dot->setBrush(Qt::gray);
                 }
