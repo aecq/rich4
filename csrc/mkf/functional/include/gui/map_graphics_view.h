@@ -6,4 +6,8 @@ class MapGraphicsView : public QGraphicsView {
 public:
     explicit MapGraphicsView(QWidget* parent = nullptr);
     void wheelEvent(QWheelEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+
+signals:
+    void mousePositionChanged(int x, int y);
 };

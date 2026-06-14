@@ -27,6 +27,7 @@ private:
 public slots:
     void onTreeRowChanged(const QModelIndex &index);
     void onGalleryContextMenu(const QPoint& pos);
+    void onMousePositionChanged(int x, int y);
 
 private:
     MainWindow* m_mainWindow;

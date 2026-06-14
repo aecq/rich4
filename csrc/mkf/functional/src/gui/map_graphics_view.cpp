@@ -12,3 +12,9 @@ void MapGraphicsView::wheelEvent(QWheelEvent* event) {
     }
     QGraphicsView::wheelEvent(event);
 }
+
+void MapGraphicsView::mouseMoveEvent(QMouseEvent* event) {
+    QPointF scenePos = mapToScene(event->pos());
+    emit mousePositionChanged(scenePos.x(), scenePos.y());
+    QGraphicsView::mouseMoveEvent(event);
+}

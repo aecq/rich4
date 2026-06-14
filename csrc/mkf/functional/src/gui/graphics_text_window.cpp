@@ -74,6 +74,10 @@ void GraphicsTextWindow::setupUI() {
     gallery->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(gallery, &QListWidget::customContextMenuRequested,
             this, &GraphicsTextWindow::onGalleryContextMenu);
+
+    // 添加鼠标指针 Map Scene XY 坐标显示连接
+    connect(mapView, &MapGraphicsView::mousePositionChanged,
+            this, &GraphicsTextWindow::onMousePositionChanged);
 }
 
 void GraphicsTextWindow::update(const QModelIndex &index) {
@@ -393,4 +397,9 @@ void GraphicsTextWindow::onGalleryContextMenu(const QPoint& pos) {
             image.save(fileName);
         }
     }
+}
+
+void GraphicsTextWindow::onMousePositionChanged(int x, int y) {
+    QString text = QString("Map Scene XY: %1, %2").arg(x).arg(y);
+    emit statusMessage(text);
 }
