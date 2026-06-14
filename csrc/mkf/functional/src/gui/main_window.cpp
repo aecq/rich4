@@ -8,6 +8,7 @@
 #include "core/utils/audio_player.h"
 #include "gui/graphics_text_window.h"
 #include <QApplication>
+#include <QCloseEvent>
 #include <QTreeView>
 #include <QFileDialog>
 #include <QMenuBar>
@@ -31,6 +32,14 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 }
 
 MainWindow::~MainWindow() {
+}
+
+void MainWindow::closeEvent(QCloseEvent* event) {
+    if (this->graphicsTextWindow) {
+        this->graphicsTextWindow->hide();
+        this->graphicsTextWindow->close();
+    }
+    QMainWindow::closeEvent(event);
 }
 
 void MainWindow::setupUI() {

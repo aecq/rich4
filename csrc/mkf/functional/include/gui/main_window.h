@@ -38,6 +38,9 @@ private:
 
     void updatePlayActionState();
 
+protected:
+    void closeEvent(QCloseEvent* event) override;
+
 private:
     // Cache* cache = nullptr;
     ResourceModel* resourceModel = nullptr;
