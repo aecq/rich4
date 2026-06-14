@@ -11,6 +11,7 @@
 #include <QPixmap>
 #include <QTextCodec>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 const int PALETTE_SIZE = 256;
@@ -396,4 +397,25 @@ static inline std::vector<MapNode> parseMapNodes(const QByteArray& bytes, int of
     std::vector<MapNode> nodes(n);
     memcpy(nodes.data(), bytes.constData() + offset + header.map_node_array_offset, n * sizeof(MapNode));
     return nodes;
+}
+
+// ====================
+//  parseWXH(string, width, height, errorMsg): 从形如 .wxh 的 QString 字符串中解析正整数 w 和 h
+// ====================
+static inline std::pair<GraphInfo, QString> parseWXH(const QString& string) {
+    GraphInfo info;
+    int indexOfX = string.indexOf("x");
+    if (indexOfX == -1) {
+        QString errorMsg = "Missing 'x' in string format";
+        return std::make_pair(info, errorMsg);
+    }
+    QString widthStr = string.mid(1, indexOfX - 1);
+    QString heightStr = string.mid(indexOfX + 1);
+    info.width = widthStr.toUInt();
+    info.height = heightStr.toUInt();
+    if (info.width <= 0 || info.height <= 0) {
+        QString errorMsg = QString("Invalid dimensions: %1x%2").arg(info.width).arg(info.height);
+        return std::make_pair(info, errorMsg);
+    }
+    return std::make_pair(info, QString());
 }
