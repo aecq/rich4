@@ -222,8 +222,7 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
                 float y = node.y;
 
                 // 解析名称
-                int indexOfNull = sizeof(node.name);
-                for (; indexOfNull >= 2 && node.name[indexOfNull - 2] == 0 && node.name[indexOfNull - 1] == 0; indexOfNull -= 2) { /* dummy */ }
+                QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
 
                 // 添加图片 item
                 int chunkOffset = type.mid(3, type.length() - 3).toInt();
@@ -239,11 +238,20 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
                 }
 
                 // 创建文本 item
-                if (indexOfNull > 0) {
-                    QString name = parseBig5Simple(QByteArray::fromRawData(node.name, indexOfNull), indexOfNull);
+                QColor colors[5] = {Qt::gray, Qt::gray, Qt::cyan, Qt::cyan, Qt::cyan};
+                int denominator = 2000;
+                if (name.length() > 0) {
                     QGraphicsTextItem* textItem = mapScene->addText(name);
                     textItem->setPos(x - textItem->boundingRect().width() / 2, y + ((node.special > 0) ? images[chunk].height() / 2 : 0));
-                    textItem->setDefaultTextColor(node.special > 0 ? Qt::cyan : Qt::gray);
+                    textItem->setDefaultTextColor(node.special > 0 ? Qt::darkCyan : Qt::gray);
+                    textItem->setDefaultTextColor(colors[node.type / denominator]);
+                }
+
+                if (node.type != 0) {
+                    QString typeStr = QString::number(node.type);
+                    QGraphicsTextItem* typeItem = mapScene->addText(typeStr);
+                    typeItem->setPos(x - typeItem->boundingRect().width() / 2, y - ((node.special > 0) ? images[chunk].height() / 2 : 0) - typeItem->boundingRect().height());
+                    typeItem->setDefaultTextColor(colors[node.type / denominator]);
                 }
 
                 // 非特殊节点没有图片时添加点标记
@@ -281,10 +289,30 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
     // Text
     if (depth == 1) {
         QString sig = resourceModel->getSignature(index.row());
+        QString type = resourceModel->getType(index.row());
         if (sig.startsWith("SPR")) {
             textEdit->setHtml(paletteHTML(index, resourceModel));
         } else if (sig.startsWith("SMP") || sig.startsWith("RIFF")) {
             textEdit->setPlainText(sig);
+        } else if (type.startsWith("MAP")) {
+            QString text;
+            text += type;
+            text += "\nScale: CTRL + Wheel";
+            text += QString("\nMap Node Count: %1").arg(m_mapNodes.size()) + "\n";
+            for (int i = 0; i < m_mapNodes.size(); i++) {
+                text += QString("\n%1 (%2, %3) %4: %5")
+                    .arg(i, 3, 10, QChar(' '))
+                    .arg(m_mapNodes[i].x)
+                    .arg(m_mapNodes[i].y)
+                    .arg(m_mapNodes[i].type, 4, 10, QChar(' '))
+                    .arg(parseBig5Trim(QByteArray::fromRawData(m_mapNodes[i].name, sizeof(MapNode::name))));
+                text += QString(" %1 %2 %3 %4\n")
+                    .arg(m_mapNodes[i].neighbors[0], 2, 10, QChar(' '))
+                    .arg(m_mapNodes[i].neighbors[1], 2, 10, QChar(' '))
+                    .arg(m_mapNodes[i].neighbors[2], 2, 10, QChar(' '))
+                    .arg(m_mapNodes[i].neighbors[3], 2, 10, QChar(' '));
+            }
+            textEdit->setPlainText(text);
         } else {
             textEdit->setPlainText(
                 parseBig5(resourceModel->getResource(index.row()).left(2 * 1024)));
