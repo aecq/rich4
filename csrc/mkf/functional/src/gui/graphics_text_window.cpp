@@ -106,7 +106,7 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
         QString sig = resourceModel->getSignature(parent.row());
         if ((sig.startsWith("SPR") || sig.startsWith("SMP"))) {
             std::vector<QImage> images = parseImages(resourceModel->getResource(parent.row()));
-            if (index.row() < m_images.size()) {
+            if (index.row() < images.size()) {
                 m_images.push_back(images[index.row()]);
                 displayImages();
             }
@@ -287,17 +287,8 @@ void GraphicsTextWindow::displayRawImage(const QModelIndex& index, ResourceModel
 
     QImage image = parseImage(bytes, width, height,
         isGrayscale ? QImage::Format_Grayscale8 : QImage::Format_RGB555, isGrayscale);
-
     m_images.push_back(image);
-
-    if (!image.isNull()) {
-        QPixmap pixmap = QPixmap::fromImage(image);
-        QIcon icon(pixmap);
-        QListWidgetItem* item = new QListWidgetItem(
-            icon, QString("%1: %2x%3").arg(index.row()).arg(width).arg(height), gallery);
-        item->setTextAlignment(Qt::AlignCenter);
-        gallery->addItem(item);
-    }
+    displayImages();
 }
 
 void GraphicsTextWindow::displayImages() {
