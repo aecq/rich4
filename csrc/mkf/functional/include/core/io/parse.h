@@ -366,35 +366,6 @@ static inline QString parseBig5(const QByteArray& bytes) {
 }
 
 // ====================
-//  drawSolidPointPixel(img, cx, cy, radius, rgbColor): 在 QImage 中绘制一个实心圆
-// ====================
-static inline void drawSolidPointPixel(QImage& img, int cx, int cy, int radius, QRgb rgbColor)
-{
-    int w = img.width();
-    int h = img.height();
-    int rSq = radius * radius;
-
-    // 遍历圆外接正方形范围
-    for (int dy = -radius; dy <= radius; ++dy)
-    {
-        int y = cy + dy;
-        if (y < 0 || y >= h) continue;
-        int dySq = dy * dy;
-
-        for (int dx = -radius; dx <= radius; ++dx)
-        {
-            int x = cx + dx;
-            if (x < 0 || x >= w) continue;
-            // 勾股定理判断是否在圆内
-            if (dx*dx + dySq <= rSq)
-            {
-                img.setPixel(x, y, rgbColor);
-            }
-        }
-    }
-}
-
-// ====================
 //  parseMapNodes(bytes, offset): 从 const QByteArray& bytes 中解析 MapNode 数组
 // ====================
 static inline std::vector<MapNode> parseMapNodes(const QByteArray& bytes, int offset=0) {
@@ -403,37 +374,4 @@ static inline std::vector<MapNode> parseMapNodes(const QByteArray& bytes, int of
     std::vector<MapNode> nodes(n);
     memcpy(nodes.data(), bytes.constData() + offset + header.map_node_array_offset, n * sizeof(MapNode));
     return nodes;
-}
-
-// ====================
-//  drawMapNodeImage(bytes, offset): 根据 const QByteArray& bytes 中的 MapNode 数组生成图像
-// ====================
-static inline QImage drawMapNodeImage(const QByteArray& bytes, int offset=0) {
-    std::vector<MapNode> nodes = parseMapNodes(bytes, offset);
-    if (nodes.empty()) {
-        return QImage();
-    }
-    int ox = 60;
-    int oy = 60;
-    int w = 640;
-    int h = 480;
-    QImage image(w, h, QImage::Format_RGB555);
-    image.fill(QColorConstants::White.rgb());
-    float m = 1.0f / 2500.0f;
-    for (int i = 1; i < nodes.size(); i++) {
-        MapNode node = nodes[i];
-        int x = ox + m * node.x * (h - ox);
-        int y = oy + m * node.y * (h - oy);
-        QString s = parseBig5Simple(bytes.mid(
-            offset + sizeof(MapDataHeader) + i * sizeof(MapNode) + sizeof(node.x) + sizeof(node.y),
-            sizeof(node.name)
-        ), sizeof(node.name));
-        if (node.special > 0) {
-            drawSolidPointPixel(image, x, y, 2, QColorConstants::Cyan.rgb());
-        } else {
-            drawSolidPointPixel(image, x, y, 2, QColorConstants::Gray.rgb());
-        }
-    }
-
-    return image;
 }
