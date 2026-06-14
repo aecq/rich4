@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gui/map_graphics_view.h"
 #include "core/types/map.h"
 #include "core/utils/resource_model.h"
 #include <QGraphicsView>
@@ -18,9 +19,6 @@ public:
     explicit GraphicsTextWindow(MainWindow* mainWindow);
     ~GraphicsTextWindow();
 
-protected:
-    bool eventFilter(QObject* obj, QEvent* event) override;
-
 private:
     void setupUI();
     void update(const QModelIndex &index);
@@ -37,7 +35,7 @@ private:
 
     QTextEdit* textEdit;
     QListWidget* gallery;
-    QGraphicsView* mapView;
+    MapGraphicsView* mapView;
     QGraphicsScene* mapScene;
 
 signals:

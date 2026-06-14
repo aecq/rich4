@@ -21,19 +21,6 @@ GraphicsTextWindow::GraphicsTextWindow(MainWindow* mainWindow) : QWidget(mainWin
 GraphicsTextWindow::~GraphicsTextWindow() {
 }
 
-bool GraphicsTextWindow::eventFilter(QObject* obj, QEvent* event) {
-    if (obj == mapView && event->type() == QEvent::Wheel) {
-        QWheelEvent* wheelEvent = static_cast<QWheelEvent*>(event);
-        if (wheelEvent->modifiers() & Qt::ControlModifier) {
-            double factor = wheelEvent->angleDelta().y() > 0 ? 1.15 : 1.0/1.15;
-            mapView->scale(factor, factor);
-            wheelEvent->accept();
-            return true;
-        }
-    }
-    return QWidget::eventFilter(obj, event);
-}
-
 void GraphicsTextWindow::setupUI() {
     setWindowTitle("Graphics Text Window");
 
@@ -69,7 +56,7 @@ void GraphicsTextWindow::setupUI() {
     gallery->setIconSize(QSize(1280, 960));
     leftLayout->addWidget(gallery);
     // 在 gallery 创建后添加
-    mapView = new QGraphicsView(leftPanel);
+    mapView = new MapGraphicsView(leftPanel);
     mapScene = new QGraphicsScene(mapView);
     mapView->setScene(mapScene);
     mapView->setDragMode(QGraphicsView::ScrollHandDrag);     // 拖拽平移
@@ -77,7 +64,6 @@ void GraphicsTextWindow::setupUI() {
     mapView->setRenderHint(QPainter::Antialiasing);
     mapView->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     mapView->setResizeAnchor(QGraphicsView::AnchorUnderMouse);
-    mapView->installEventFilter(this);  // 安装事件过滤器
     mapView->hide();
     leftLayout->addWidget(mapView);
 
