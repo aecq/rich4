@@ -24,6 +24,8 @@ private:
     void update(const QModelIndex &index);
     QString paletteHTML(const QModelIndex &index, ResourceModel* resourceModel);
 
+    void displayMap(const QModelIndex& index, ResourceModel* resourceModel);
+
 public slots:
     void onTreeRowChanged(const QModelIndex &index);
     void onGalleryContextMenu(const QPoint& pos);

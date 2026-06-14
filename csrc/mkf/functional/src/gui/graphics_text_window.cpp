@@ -189,84 +189,7 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
                 gallery->addItem(item);
             }
         } else if (type.startsWith("MAP")) {
-            // 切换显示模式
-            gallery->hide();
-            mapView->show();
-
-            // 解析节点
-            QByteArray bytes = resourceModel->getResource(index.row());
-            m_mapNodes = parseMapNodes(bytes, 0);
-            int count = 0;
-            for (int i = 0; i < resourceModel->n(); i++) {
-                if (resourceModel->getSignature(i).startsWith("GND")) {
-                    count++;
-                } else if (resourceModel->getSignature(i).startsWith("SMP") || resourceModel->getSignature(i).startsWith("SPR")) {
-                    break;
-                }
-            }
-            std::vector<QImage> images = parseImages(resourceModel->getResource(3 * count));
-
-            mapScene->clear();
-
-            if (m_mapNodes.empty()) return;
-
-            // // 计算缩放因子和场景范围
-            // int margin = 50;
-            int sceneSize = 2300;  // 场景大小
-
-            float factor = 1.0f * mapView->width() / sceneSize;
-            mapView->scale(factor, factor);
-
-            // 创建每个节点的 item
-            for (size_t i = 0; i < m_mapNodes.size(); i++) {
-                const MapNode& node = m_mapNodes[i];
-
-                // 坐标转换
-                float x = node.x;
-                float y = node.y;
-
-                // 解析名称
-                QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
-
-                // 添加图片 item
-                int chunkOffset = type.mid(3, type.length() - 3).toInt();
-                int chunk = node.chunk + chunkOffset;
-                if ((node.special > 0 && chunk < images.size() && !images[chunk].isNull())  // 特殊节点
-                    || (node.special <= 0 && 0 < chunk && chunk < images.size())  // 非特殊节点有图片
-                ) {
-                    QPixmap pixmap = QPixmap::fromImage(images[chunk]);
-                    QBitmap mask = pixmap.createMaskFromColor(Qt::black);
-                    pixmap.setMask(mask);
-                    QGraphicsPixmapItem* pixmapItem = mapScene->addPixmap(pixmap);
-                    pixmapItem->setPos(x - images[chunk].width() / 2, y - images[chunk].height() / 2);
-                }
-
-                // 创建文本 item
-                QColor colors[5] = {Qt::gray, Qt::gray, Qt::cyan, Qt::cyan, Qt::cyan};
-                int denominator = 2000;
-                if (name.length() > 0) {
-                    QGraphicsTextItem* textItem = mapScene->addText(name);
-                    textItem->setPos(x - textItem->boundingRect().width() / 2, y + ((node.special > 0) ? images[chunk].height() / 2 : 0));
-                    textItem->setDefaultTextColor(node.special > 0 ? Qt::darkCyan : Qt::gray);
-                    textItem->setDefaultTextColor(colors[node.type / denominator]);
-                }
-
-                if (node.type != 0) {
-                    QString typeStr = QString::number(node.type);
-                    QGraphicsTextItem* typeItem = mapScene->addText(typeStr);
-                    typeItem->setPos(x - typeItem->boundingRect().width() / 2, y - ((node.special > 0) ? images[chunk].height() / 2 : 0) - typeItem->boundingRect().height());
-                    typeItem->setDefaultTextColor(colors[node.type / denominator]);
-                }
-
-                // 非特殊节点没有图片时添加点标记
-                if (node.special <= 0 && chunk <= 0) {
-                    QGraphicsEllipseItem* dot = mapScene->addEllipse(x-3, y-3, 6, 6);
-                    dot->setBrush(Qt::gray);
-                }
-            }
-
-            mapScene->setSceneRect(0, 0, sceneSize, sceneSize);
-            mapView->fitInView(mapScene->sceneRect(), Qt::KeepAspectRatio);
+            displayMap(index, resourceModel);
         }
     } else if (depth == 2) {
         QModelIndex parent = index.parent();
@@ -348,6 +271,88 @@ QString GraphicsTextWindow::paletteHTML(const QModelIndex &index, ResourceModel*
         }
     }
     return text;
+}
+
+void GraphicsTextWindow::displayMap(const QModelIndex& index, ResourceModel* resourceModel) {
+    // 切换显示模式
+    gallery->hide();
+    mapView->show();
+
+    // 解析节点
+    QByteArray bytes = resourceModel->getResource(index.row());
+    m_mapNodes = parseMapNodes(bytes, 0);
+    int count = 0;
+    for (int i = 0; i < resourceModel->n(); i++) {
+        if (resourceModel->getSignature(i).startsWith("GND")) {
+            count++;
+        } else if (resourceModel->getSignature(i).startsWith("SMP") || resourceModel->getSignature(i).startsWith("SPR")) {
+            break;
+        }
+    }
+    std::vector<QImage> images = parseImages(resourceModel->getResource(3 * count));
+
+    mapScene->clear();
+
+    if (m_mapNodes.empty()) return;
+
+    // // 计算缩放因子和场景范围
+    // int margin = 50;
+    int sceneSize = 2300;  // 场景大小
+
+    float factor = 1.0f * mapView->width() / sceneSize;
+    mapView->scale(factor, factor);
+
+    // 创建每个节点的 item
+    for (size_t i = 0; i < m_mapNodes.size(); i++) {
+        const MapNode& node = m_mapNodes[i];
+
+        // 坐标转换
+        float x = node.x;
+        float y = node.y;
+
+        // 解析名称
+        QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
+
+        // 添加图片 item
+        QString type = resourceModel->getType(index.row());
+        int chunkOffset = type.mid(3, type.length() - 3).toInt();
+        int chunk = node.chunk + chunkOffset;
+        if ((node.special > 0 && chunk < images.size() && !images[chunk].isNull())  // 特殊节点
+            || (node.special <= 0 && 0 < chunk && chunk < images.size())  // 非特殊节点有图片
+        ) {
+            QPixmap pixmap = QPixmap::fromImage(images[chunk]);
+            QBitmap mask = pixmap.createMaskFromColor(Qt::black);
+            pixmap.setMask(mask);
+            QGraphicsPixmapItem* pixmapItem = mapScene->addPixmap(pixmap);
+            pixmapItem->setPos(x - images[chunk].width() / 2, y - images[chunk].height() / 2);
+        }
+
+        // 创建文本 item
+        QColor colors[5] = {Qt::gray, Qt::gray, Qt::cyan, Qt::cyan, Qt::cyan};
+        int denominator = 2000;
+        if (name.length() > 0) {
+            QGraphicsTextItem* textItem = mapScene->addText(name);
+            textItem->setPos(x - textItem->boundingRect().width() / 2, y + ((node.special > 0) ? images[chunk].height() / 2 : 0));
+            textItem->setDefaultTextColor(node.special > 0 ? Qt::darkCyan : Qt::gray);
+            textItem->setDefaultTextColor(colors[node.type / denominator]);
+        }
+
+        if (node.type != 0) {
+            QString typeStr = QString::number(node.type);
+            QGraphicsTextItem* typeItem = mapScene->addText(typeStr);
+            typeItem->setPos(x - typeItem->boundingRect().width() / 2, y - ((node.special > 0) ? images[chunk].height() / 2 : 0) - typeItem->boundingRect().height());
+            typeItem->setDefaultTextColor(colors[node.type / denominator]);
+        }
+
+        // 非特殊节点没有图片时添加点标记
+        if (node.special <= 0 && chunk <= 0) {
+            QGraphicsEllipseItem* dot = mapScene->addEllipse(x-3, y-3, 6, 6);
+            dot->setBrush(Qt::gray);
+        }
+    }
+
+    mapScene->setSceneRect(0, 0, sceneSize, sceneSize);
+    mapView->fitInView(mapScene->sceneRect(), Qt::KeepAspectRatio);
 }
 
 void GraphicsTextWindow::onTreeRowChanged(const QModelIndex &index) {
