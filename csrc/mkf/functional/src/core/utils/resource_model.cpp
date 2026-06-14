@@ -205,6 +205,9 @@ QString ResourceModel::guessType(int index) {
             return QString("$128x192");
     }
     if (index >= 1 && getSignature(index - 1) == "GND") {
+        if (parseBig5(getResource(index).left(1024)).contains("魔羯座區")) {
+            return QString("MAP-1");
+        }
         return QString("MAP");
     }
     return Cache::unknownSignature();
