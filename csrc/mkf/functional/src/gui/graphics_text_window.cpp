@@ -13,7 +13,7 @@
 #include <QVBoxLayout>
 #include <QWheelEvent>
 
-GraphicsTextWindow::GraphicsTextWindow(MainWindow* mainWindow) : QWidget(mainWindow, Qt::Window), m_mainWindow(mainWindow) {
+GraphicsTextWindow::GraphicsTextWindow(MainWindow* mainWindow) : QWidget(nullptr, Qt::Window), m_mainWindow(mainWindow) {
     setupUI();
     resize(1000, 600);
 }
