@@ -111,83 +111,9 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
                 }
             }
         } else if (type.startsWith("!")) {
-            int lenType = type.length();
-            int indexOfX = type.indexOf("x");
-            if (indexOfX == -1) {
-                qDebug() << "indexOfX == -1";
-                return;
-            }
-            QString widthStr = type.right(lenType - 1).left(indexOfX - 1);
-            QString heightStr = type.right(lenType - indexOfX - 1);
-            uint width = widthStr.toUInt();
-            uint height = heightStr.toUInt();
-            if (width <= 0 || height <= 0) {
-                QString message = QString("width(%1) height(%2) is invalid").arg(width).arg(height);
-                emit statusMessage(message);
-                return;
-            }
-            QByteArray bytes = resourceModel->getResource(index.row());
-            if (width * height * 2 != bytes.size()) {
-                QString message =QString("%1 x %2 x 2 != %3. width * height * 2 != bytes.size()").arg(width).arg(height).arg(bytes.size());
-                emit statusMessage(message);
-                return;
-            }
-            QImage image = parseImage(bytes, width, height);
-            m_images.push_back(image);
-            if (!image.isNull()) {
-                QPixmap pixmap = QPixmap::fromImage(image);
-                QIcon icon(pixmap);
-                QListWidgetItem* item = new QListWidgetItem(
-                    icon,
-                    QString("%1: %2x%3")
-                        .arg(index.row())
-                        .arg(width)
-                        .arg(height),
-                    gallery
-                );
-                item->setTextAlignment(Qt::AlignCenter);
-                gallery->addItem(item);
-            }
+            displayRawImage(index, resourceModel, false);
         } else if (type.startsWith("$")) {
-            // #region repeated code TODO: refactor this code
-            int lenType = type.length();
-            int indexOfX = type.indexOf("x");
-            if (indexOfX == -1) {
-                qDebug() << "indexOfX == -1";
-                return;
-            }
-            QString widthStr = type.right(lenType - 1).left(indexOfX - 1);
-            QString heightStr = type.right(lenType - indexOfX - 1);
-            uint width = widthStr.toUInt();
-            uint height = heightStr.toUInt();
-            if (width <= 0 || height <= 0) {
-                QString message = QString("width(%1) height(%2) is invalid").arg(width).arg(height);
-                emit statusMessage(message);
-                return;
-            }
-            // #endregion repeated code
-            QByteArray bytes = resourceModel->getResource(index.row());
-            if (width * height != bytes.size()) {
-                QString message =QString("%1 x %2 != %3. width * height != bytes.size()").arg(width).arg(height).arg(bytes.size());
-                emit statusMessage(message);
-                return;
-            }
-            QImage image = parseImage(bytes, width, height, QImage::Format_Grayscale8, true);
-            m_images.push_back(image);
-            if (!image.isNull()) {
-                QPixmap pixmap = QPixmap::fromImage(image);
-                QIcon icon(pixmap);
-                QListWidgetItem* item = new QListWidgetItem(
-                    icon,
-                    QString("%1: %2x%3")
-                        .arg(index.row())
-                        .arg(width)
-                        .arg(height),
-                    gallery
-                );
-                item->setTextAlignment(Qt::AlignCenter);
-                gallery->addItem(item);
-            }
+            displayRawImage(index, resourceModel, true);
         } else if (type.startsWith("MAP")) {
             displayMap(index, resourceModel);
         }
@@ -366,6 +292,39 @@ void GraphicsTextWindow::onTreeRowChanged(const QModelIndex &index) {
         return;
     }
     update(index);
+}
+
+void GraphicsTextWindow::displayRawImage(const QModelIndex& index, ResourceModel* resourceModel, bool isGrayscale) {
+    QString type = resourceModel->getType(index.row());
+    auto wxh = parseWXH(type);
+    int width = wxh.first.width;
+    int height = wxh.first.height;
+    QString msg = wxh.second;
+    if (!msg.isEmpty()) {
+        emit statusMessage(msg);
+        return;
+    }
+    QByteArray bytes = resourceModel->getResource(index.row());
+    uint expectedSize = isGrayscale ? width * height : width * height * 2;
+    if (bytes.size() != expectedSize) {
+        QString message = QString("%1 x %2 %3 != %4").arg(width).arg(height).arg(isGrayscale ? "" : "x 2").arg(bytes.size());
+        emit statusMessage(message);
+        return;
+    }
+
+    QImage image = parseImage(bytes, width, height,
+        isGrayscale ? QImage::Format_Grayscale8 : QImage::Format_RGB555, isGrayscale);
+
+    m_images.push_back(image);
+
+    if (!image.isNull()) {
+        QPixmap pixmap = QPixmap::fromImage(image);
+        QIcon icon(pixmap);
+        QListWidgetItem* item = new QListWidgetItem(
+            icon, QString("%1: %2x%3").arg(index.row()).arg(width).arg(height), gallery);
+        item->setTextAlignment(Qt::AlignCenter);
+        gallery->addItem(item);
+    }
 }
 
 void GraphicsTextWindow::onGalleryContextMenu(const QPoint& pos) {
