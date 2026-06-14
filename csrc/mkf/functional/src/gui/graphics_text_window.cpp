@@ -92,24 +92,8 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
         QString sig = resourceModel->getSignature(index.row());
         QString type = resourceModel->getType(index.row());
         if (sig.startsWith("SPR") || sig.startsWith("SMP")) {
-            std::vector<QImage> images = parseImages(resourceModel->getResource(index.row()));
-            m_images = images;
-            for (size_t i = 0; i < images.size(); i++) {
-                if (!images[i].isNull()) {
-                    QPixmap pixmap = QPixmap::fromImage(images[i]);
-                    QIcon icon(pixmap);
-                    QListWidgetItem* item = new QListWidgetItem(
-                        icon,
-                        QString("%1: %2x%3")
-                            .arg(i)
-                            .arg(images[i].width())
-                            .arg(images[i].height()),
-                        gallery
-                    );
-                    item->setTextAlignment(Qt::AlignCenter);
-                    gallery->addItem(item);
-                }
-            }
+            m_images = parseImages(resourceModel->getResource(index.row()));
+            displayImages();
         } else if (type.startsWith("!")) {
             displayRawImage(index, resourceModel, false);
         } else if (type.startsWith("$")) {
@@ -122,20 +106,9 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
         QString sig = resourceModel->getSignature(parent.row());
         if ((sig.startsWith("SPR") || sig.startsWith("SMP"))) {
             std::vector<QImage> images = parseImages(resourceModel->getResource(parent.row()));
-            m_images = images;
-            if (index.row() < images.size() && !images[index.row()].isNull()) {
-                QPixmap pixmap = QPixmap::fromImage(images[index.row()]);
-                QIcon icon(pixmap);
-                QListWidgetItem* item = new QListWidgetItem(
-                    icon,
-                    QString("%1: %2x%3")
-                        .arg(index.row())
-                        .arg(images[index.row()].width())
-                        .arg(images[index.row()].height()),
-                    gallery
-                );
-                item->setTextAlignment(Qt::AlignCenter);
-                gallery->addItem(item);
+            if (index.row() < m_images.size()) {
+                m_images.push_back(images[index.row()]);
+                displayImages();
             }
         }
     }
@@ -322,6 +295,26 @@ void GraphicsTextWindow::displayRawImage(const QModelIndex& index, ResourceModel
         QIcon icon(pixmap);
         QListWidgetItem* item = new QListWidgetItem(
             icon, QString("%1: %2x%3").arg(index.row()).arg(width).arg(height), gallery);
+        item->setTextAlignment(Qt::AlignCenter);
+        gallery->addItem(item);
+    }
+}
+
+void GraphicsTextWindow::displayImages() {
+    for (size_t i = 0; i < m_images.size(); i++) {
+        if (m_images[i].isNull()) {
+            continue;
+        }
+        QPixmap pixmap = QPixmap::fromImage(m_images[i]);
+        QIcon icon(pixmap);
+        QListWidgetItem* item = new QListWidgetItem(
+            icon,
+            QString("%1: %2x%3")
+                .arg(i)
+                .arg(m_images[i].width())
+                .arg(m_images[i].height()),
+            gallery
+        );
         item->setTextAlignment(Qt::AlignCenter);
         gallery->addItem(item);
     }

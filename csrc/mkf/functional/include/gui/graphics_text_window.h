@@ -27,6 +27,7 @@ private:
     void displayMap(const QModelIndex& index, ResourceModel* resourceModel);
     void displayMapText(const QModelIndex& index, ResourceModel* resourceModel);
     void displayRawImage(const QModelIndex& index, ResourceModel* resourceModel, bool isGrayscale = false);
+    void displayImages();
 
 public slots:
     void onTreeRowChanged(const QModelIndex &index);
