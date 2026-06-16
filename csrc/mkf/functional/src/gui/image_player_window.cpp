@@ -1,5 +1,6 @@
 #include "gui/image_player_window.h"
 #include "gui/main_window.h"
+#include "core/utils/flic.h"
 #include <QVBoxLayout>
 
 ImagePlayerWindow::ImagePlayerWindow(MainWindow* mainWindow) : QWidget(nullptr, Qt::Window), m_mainWindow(mainWindow) {
@@ -28,6 +29,7 @@ void ImagePlayerWindow::update(const QModelIndex &index) {
     QString type = resourceModel->getType(row);
     QByteArray bytes = resourceModel->getResource(row);
     if (type.startsWith("FLC")) {
+        imagePlayerWidget->setSpeed(parseFPS(bytes));
         std::vector<QImage> images = parseFLIC(bytes);
         if (images.empty()) {
             return;
