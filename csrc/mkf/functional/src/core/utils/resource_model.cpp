@@ -174,8 +174,6 @@ QString ResourceModel::getType(int index) { return types[index]; }
 QString ResourceModel::getComment(int index) { return comments[index]; }
 
 QString ResourceModel::guessType(int index) {
-    const size_t FLC_LIMIT = 256;
-    const size_t MAP_LIMIT = 256;
     if (index < 0 || index >= n()) {
         qDebug() << "guessType: index out of range";
         return QString();
@@ -183,9 +181,6 @@ QString ResourceModel::guessType(int index) {
     QString sig = getSignature(index);
     if (sig != Cache::unknownSignature()) {
         return sig;
-    }
-    if (getResource(index).left(FLC_LIMIT).contains(".FLC")) {
-        return "FLC";
     }
     ResourceHeader header = getHeader(index);
     switch (header.uncompressed_size) {
@@ -207,6 +202,7 @@ QString ResourceModel::guessType(int index) {
             return QString("$128x192");
     }
     if (index >= 1 && getSignature(index - 1) == "GND") {
+        const size_t MAP_LIMIT = 256;
         if (parseBig5(getResource(index).left(MAP_LIMIT)).contains("魔羯座區")) {
             return QString("MAP-1");
         }

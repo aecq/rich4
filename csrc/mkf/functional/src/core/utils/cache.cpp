@@ -26,14 +26,9 @@ void Cache::init(const QString& filename) {
     for (int i = 0; i < offsets.size(); i++) {
         byteArrays[i].clear();
         file.seek(offsets[i] + sizeof(ResourceHeader));
-        if (isCompressed(headers[i])) {
-            // 为了确保能正确解压出前 4 字节数据，建议传入至少 16 字节 的压缩数据
-            QByteArray data = parseCompressed(file.read(32), 4);
-            // 取前 4 字节
-            signatures[i] = QString(data.constData()).left(4);
-        } else {
-            signatures[i] = QString(file.read(4));
-        }
+        // 为了确保能正确解压出前 4 字节数据，建议传入至少 16 字节 的压缩数据
+        static const int SIGNATURE_COUNT = 8;
+        signatures[i] = isCompressed(headers[i]) ? parseCompressed(file.read(4 * SIGNATURE_COUNT), SIGNATURE_COUNT) : file.read(SIGNATURE_COUNT);
         isLoaded[i] = false;
     }
 }
@@ -56,20 +51,22 @@ ResourceHeader Cache::getHeader(int index) {
 }
 
 QString Cache::getSignature(int index) {
-    if (signatures[index].startsWith("SPR")) {
-        return QString("SPR");
+    QByteArray data = signatures[index];
+    if (parseInt32(data.mid(0, 4)) == headers[index].uncompressed_size) {
+        if (parseInt16(data.mid(4, 2)) == int16_t(0xAF12)) {
+            return QString("FLC");
+        }
     }
-    if (signatures[index].startsWith("SMP")) {
-        return QString("SMP");
+    QString signature = QString(data.constData()).left(3);
+    if (signature.startsWith("SPR") || signature.startsWith("SMP") || signature.startsWith("GND")) {
+        return signature;
     }
-    if (signatures[index].startsWith("RIFF")) {
+    if ( signature.startsWith("RIF")) {
         return QString("RIFF");
-    }
-    if (signatures[index].startsWith("GND")) {
-        return QString("GND");
     }
     return unknownSignature();
 }
+
 
 QByteArray Cache::getResource(int index) {
     QByteArray data;

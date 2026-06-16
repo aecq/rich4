@@ -25,7 +25,7 @@ private:
     QString filename;
     std::vector<ResourceOffset> offsets;
     std::vector<ResourceHeader> headers;
-    std::vector<QString> signatures;
+    std::vector<QByteArray> signatures;
     std::vector<QByteArray> byteArrays;
     std::vector<bool> isLoaded;
 };
