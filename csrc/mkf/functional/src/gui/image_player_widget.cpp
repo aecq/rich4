@@ -129,6 +129,8 @@ void ImagePlayerWidget::setupUI() {
             this, &ImagePlayerWidget::onCurrentFrameChanged);
     connect(m_speedSpin, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &ImagePlayerWidget::setSpeed);
+    connect(m_loopCheckBox, &QCheckBox::toggled,
+            this, &ImagePlayerWidget::setLoop);
     connect(m_timer, &QTimer::timeout,
             this, &ImagePlayerWidget::onTimerTick);
 }
@@ -276,6 +278,9 @@ void ImagePlayerWidget::seek(int frameIndex) {
 
 void ImagePlayerWidget::setSpeed(int fps) {
     m_fps = qMax(1, fps);
+    m_speedSpin->blockSignals(true);
+    m_speedSpin->setValue(m_fps);
+    m_speedSpin->blockSignals(false);
     if (m_isPlaying) {
         m_timer->start(1000 / m_fps);
     }
@@ -316,6 +321,9 @@ void ImagePlayerWidget::onStartFrameChanged(int value) {
     m_startFrameSlider->blockSignals(true);
     m_startFrameSlider->setValue(m_startFrame);
     m_startFrameSlider->blockSignals(false);
+    m_startFrameSpin->blockSignals(true);
+    m_startFrameSpin->setValue(m_startFrame);
+    m_startFrameSpin->blockSignals(false);
     if (m_startFrame > m_endFrame) {
         m_endFrameSlider->blockSignals(true);
         m_endFrameSlider->setValue(m_startFrame);
@@ -337,6 +345,9 @@ void ImagePlayerWidget::onEndFrameChanged(int value) {
     m_endFrameSlider->blockSignals(true);
     m_endFrameSlider->setValue(m_endFrame);
     m_endFrameSlider->blockSignals(false);
+    m_endFrameSpin->blockSignals(true);
+    m_endFrameSpin->setValue(m_endFrame);
+    m_endFrameSpin->blockSignals(false);
     if (m_endFrame < m_startFrame) {
         m_startFrameSlider->blockSignals(true);
         m_startFrameSlider->setValue(m_endFrame);
@@ -356,5 +367,12 @@ void ImagePlayerWidget::onEndFrameChanged(int value) {
 void ImagePlayerWidget::onCurrentFrameChanged(int value) {
     if (value != m_currentFrame) {
         seek(value);
+    } else {
+        m_currentFrameSlider->blockSignals(true);
+        m_currentFrameSlider->setValue(m_currentFrame);
+        m_currentFrameSlider->blockSignals(false);
+        m_currentFrameSpin->blockSignals(true);
+        m_currentFrameSpin->setValue(m_currentFrame);
+        m_currentFrameSpin->blockSignals(false);
     }
 }
