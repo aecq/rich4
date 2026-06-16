@@ -136,7 +136,7 @@ void ImagePlayerWidget::setupUI() {
 void ImagePlayerWidget::setImages(const std::vector<QImage>& images) {
     m_images = images;
     m_startFrame = 0;
-    m_endFrame = static_cast<int>(m_images.size()) - 1;
+    m_endFrame = qMax(0, static_cast<int>(m_images.size()) - 1);
     m_currentFrame = 0;
 
     m_startFrameSlider->setMaximum(m_endFrame);
