@@ -1,4 +1,5 @@
 #include "gui/main_window.h"
+#include "gui/image_player_widget.h"
 #include "core/utils/check.h"
 #include "core/io/parse.h"
 #include "core/io/write.h"
@@ -22,6 +23,7 @@
 #include <QProcess>
 #include <QToolBar>
 #include <QItemSelectionModel>
+#include <memory>
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     resourceModel = new ResourceModel();
@@ -148,42 +150,44 @@ void MainWindow::playFLC() {
         return;
     }
     int row = index.row();
-    QString defaultName = QString("%1%2.flc").arg(resourceModel->getBasename()).arg(row, 4, 10, QChar('0'));
-    QString flcFolder = resourceModel->getCSVFolder() + "/flc/";
-    QString filename = flcFolder + defaultName;
-    QDir dir(flcFolder);
-    dir.mkpath(flcFolder);
-    // #region vlc
-    // qDebug() << qgetenv("PATH");
-    // 1. 检查文件路径是否为空
-    QFile file(filename);
-    if (!file.exists()) {
-        resourceModel->exportBinary(row, filename);
-        qDebug() << "Exported binary to:" << filename;
+    QString type = resourceModel->getSignature(row);
+    QByteArray bytes = resourceModel->getResource(row);
+
+    // 复用已有窗口或创建新的
+    static ImagePlayerWidget* imagePlayerWidget = nullptr;
+
+    if (!imagePlayerWidget || !imagePlayerWidget->isVisible()) {
+        imagePlayerWidget = new ImagePlayerWidget(nullptr);
+        imagePlayerWidget->setAttribute(Qt::WA_DeleteOnClose);
     }
-    // 2. 创建QProcess（Qt跨平台进程调用类）
-    QProcess *vlcProcess = new QProcess();
-    // 设置进程结束后自动销毁，避免内存泄漏
-    vlcProcess->setParent(nullptr);
-    vlcProcess->setProgram("vlc"); // 直接调用PATH中的vlc命令
-    // 3. 构建参数：播放文件 + 推荐参数（后台播放，不阻塞Qt程序）
-    QStringList arguments;
-    arguments << filename.replace("/", "\\")  // VLC 参数文件路径
-            //   << "--play-and-exit"   // 播放完毕自动关闭VLC
-              << "--one-instance";   // 单实例运行（避免重复打开VLC）
-    vlcProcess->setArguments(arguments);
-    // 4. 启动VLC进程（分离式启动，不阻塞主程序）
-    bool startOk = vlcProcess->startDetached();
-    if (startOk) {
-        qDebug() << "VLC 启动成功，正在播放：" << filename;
+
+    if (type.startsWith("FLC")) {
+        std::vector<QImage> images = parseFLIC(bytes);
+        if (images.empty()) {
+            delete imagePlayerWidget;
+            imagePlayerWidget = nullptr;
+            return;
+        }
+        imagePlayerWidget->setImages(images);
+    } else if (type.startsWith("SPR") || type.startsWith("SMP")) {
+        std::vector<GraphInfo> graphInfos = parseGraphInfos(bytes);
+        std::vector<QImage> images = parseImages(bytes);
+        if (images.empty()) {
+            delete imagePlayerWidget;
+            imagePlayerWidget = nullptr;
+            return;
+        }
+        imagePlayerWidget->setImages(images);
+        imagePlayerWidget->setGraphInfos(graphInfos);
     } else {
-        qDebug() << "VLC 启动失败！错误信息：" << vlcProcess->errorString();
-        qDebug() << "请确认 VLC 已添加到系统环境变量 PATH 中";
-        statusBar()->showMessage("VLC 启动失败！错误信息：" + vlcProcess->errorString());
+        delete imagePlayerWidget;
+        imagePlayerWidget = nullptr;
+        return;
     }
-    // 因为是startDetached，进程对象可以安全删除
-    vlcProcess->deleteLater();
-    // #endregion vlc
+
+    imagePlayerWidget->setMinimumSize(640, 480);
+    imagePlayerWidget->resize(800, 600);
+    imagePlayerWidget->show();
 }
 
 void MainWindow::saveCSV() {
@@ -379,7 +383,11 @@ void MainWindow::updatePlayActionState() {
         // 判断条件
         if (depth == 1 && resourceModel->getSignature(index.row()).startsWith("RIFF")) {
             enableRIFF = true;
-        } else if (depth == 1 && resourceModel->getType(index.row()) == "FLC") {
+        } else if (depth == 1 && (
+            resourceModel->getType(index.row()).startsWith("FLC") ||
+            resourceModel->getType(index.row()).startsWith("SPR") ||
+            resourceModel->getType(index.row()).startsWith("SMP")
+        )) {
             enableFLC = true;
         }
     }
