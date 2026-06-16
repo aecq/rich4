@@ -468,3 +468,19 @@ static inline std::vector<QImage> parseFLIC(const QByteArray& bytes) {
     }
     return images;
 }
+
+static inline int parseFPS(const QByteArray& bytes) {
+    FLICResource resource(bytes);
+    flic::Decoder decoder(&resource);
+    flic::Header header;
+    if (!decoder.readHeader(header)) {
+        return -1;
+    }
+    switch (parseInt16(bytes.mid(4, 2))) {
+        case int16_t(0xAF11):
+            return 70 / header.speed;
+        case int16_t(0xAF12):
+            return 1000 / header.speed;
+    }
+    return -1;
+}
