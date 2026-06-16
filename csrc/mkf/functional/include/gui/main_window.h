@@ -7,6 +7,7 @@
 #include <QStandardItemModel>
 #include <QTreeView>
 class GraphicsTextWindow;
+class ImagePlayerWindow;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -22,11 +23,11 @@ public:
 private slots:
     void openFile();
     void playAudio();
-    void playFLC();
     void saveCSV();
     void exportResource();
     void replaceResource();
     void openGraphicsTextWindow();
+    void openImagePlayerWindow();
     void onTreeDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
 
 private:
@@ -48,10 +49,11 @@ private:
     QStandardItemModel* treeModel = nullptr;
 
     QAction* playAudioAction = nullptr;
-    QAction* playFLCAction = nullptr;
+    QAction* playImagesAction = nullptr;
     QAction* saveCSVAction = nullptr;
 
     GraphicsTextWindow* graphicsTextWindow = nullptr;
+    ImagePlayerWindow* imagePlayerWindow = nullptr;
 
 signals:
     void treeRowChanged(const QModelIndex &index);

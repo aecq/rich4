@@ -1,5 +1,5 @@
 #include "gui/main_window.h"
-#include "gui/image_player_widget.h"
+#include "gui/image_player_window.h"
 #include "core/utils/check.h"
 #include "core/io/parse.h"
 #include "core/io/write.h"
@@ -41,6 +41,10 @@ void MainWindow::closeEvent(QCloseEvent* event) {
         this->graphicsTextWindow->hide();
         this->graphicsTextWindow->close();
     }
+    if (this->imagePlayerWindow) {
+        this->imagePlayerWindow->hide();
+        this->imagePlayerWindow->close();
+    }
     QMainWindow::closeEvent(event);
 }
 
@@ -80,10 +84,10 @@ void MainWindow::createMenuBar() {
     connect(playAudioAction, &QAction::triggered, this, &MainWindow::playAudio);
     playAudioAction->setEnabled(false);
 
-    playFLCAction = showMenu->addAction("Play FLC");
-    playFLCAction->setShortcut(QKeySequence::Refresh);
-    connect(playFLCAction, &QAction::triggered, this, &MainWindow::playFLC);
-    playFLCAction->setEnabled(false);
+    playImagesAction = showMenu->addAction("Play Images");
+    playImagesAction->setShortcut(QKeySequence::Refresh);
+    connect(playImagesAction, &QAction::triggered, this, &MainWindow::openImagePlayerWindow);
+    playImagesAction->setEnabled(false);
 
     QAction* graphicsTextAction = showMenu->addAction("Graphics Text");
     connect(graphicsTextAction, &QAction::triggered, this, &MainWindow::openGraphicsTextWindow);
@@ -98,7 +102,7 @@ void MainWindow::createToolBar() {
     toolBar->addSeparator();
 
     toolBar->addAction(playAudioAction);
-    toolBar->addAction(playFLCAction);
+    toolBar->addAction(playImagesAction);
 
     QAction* graphicsTextAction = toolBar->addAction("Graphics Text");
     connect(graphicsTextAction, &QAction::triggered, this, &MainWindow::openGraphicsTextWindow);
@@ -137,57 +141,6 @@ void MainWindow::playAudio() {
     } else {
         statusBar()->showMessage("Please select an audio resource.");
     }
-}
-
-void MainWindow::playFLC() {
-    QItemSelectionModel* selectionModel = treeView->selectionModel();
-    QModelIndex index = selectionModel->currentIndex();
-    if (!index.isValid()) {
-        return;
-    }
-    int depth = indexDepth(index);
-    if (depth != 1) {
-        return;
-    }
-    int row = index.row();
-    QString type = resourceModel->getSignature(row);
-    QByteArray bytes = resourceModel->getResource(row);
-
-    // 复用已有窗口或创建新的
-    static ImagePlayerWidget* imagePlayerWidget = nullptr;
-
-    if (!imagePlayerWidget || !imagePlayerWidget->isVisible()) {
-        imagePlayerWidget = new ImagePlayerWidget(nullptr);
-        imagePlayerWidget->setAttribute(Qt::WA_DeleteOnClose);
-    }
-
-    if (type.startsWith("FLC")) {
-        std::vector<QImage> images = parseFLIC(bytes);
-        if (images.empty()) {
-            delete imagePlayerWidget;
-            imagePlayerWidget = nullptr;
-            return;
-        }
-        imagePlayerWidget->setImages(images);
-    } else if (type.startsWith("SPR") || type.startsWith("SMP")) {
-        std::vector<GraphInfo> graphInfos = parseGraphInfos(bytes);
-        std::vector<QImage> images = parseImages(bytes);
-        if (images.empty()) {
-            delete imagePlayerWidget;
-            imagePlayerWidget = nullptr;
-            return;
-        }
-        imagePlayerWidget->setImages(images);
-        imagePlayerWidget->setGraphInfos(graphInfos);
-    } else {
-        delete imagePlayerWidget;
-        imagePlayerWidget = nullptr;
-        return;
-    }
-
-    imagePlayerWidget->setMinimumSize(640, 480);
-    imagePlayerWidget->resize(800, 600);
-    imagePlayerWidget->show();
 }
 
 void MainWindow::saveCSV() {
@@ -286,6 +239,27 @@ void MainWindow::openGraphicsTextWindow()
     graphicsTextWindow->raise();
 }
 
+void MainWindow::openImagePlayerWindow()
+{
+    if (!imagePlayerWindow) {
+        imagePlayerWindow = new ImagePlayerWindow(this);
+        connect(this, &MainWindow::treeRowChanged, imagePlayerWindow, &ImagePlayerWindow::onTreeRowChanged);
+        connect(imagePlayerWindow, &ImagePlayerWindow::statusMessage, this, [this](const QString& message) {
+            statusBar()->showMessage(message);
+        });
+        QModelIndex index = treeView->currentIndex();
+        imagePlayerWindow->onTreeRowChanged(index);
+    }
+    QRect mainRect = this->frameGeometry();
+    QPoint targetPos(mainRect.topRight().x(), mainRect.topRight().y() + mainRect.height() / 3);
+    imagePlayerWindow->move(targetPos);
+    imagePlayerWindow->resize(mainRect.height() / 9 * 8, mainRect.height() / 3 * 2);
+    if (!imagePlayerWindow->isVisible()) {
+        imagePlayerWindow->show();
+    }
+    imagePlayerWindow->raise();
+}
+
 void MainWindow::loadFileTree() {
     treeModel->clear();
     treeModel->setHorizontalHeaderLabels({
@@ -374,7 +348,7 @@ void MainWindow::updatePlayActionState() {
 
     // 默认不可用
     bool enableRIFF = false;
-    bool enableFLC = false;
+    bool enableImages = false;
 
     if (index.isValid()) {
         // 计算深度
@@ -386,15 +360,17 @@ void MainWindow::updatePlayActionState() {
         } else if (depth == 1 && (
             resourceModel->getType(index.row()).startsWith("FLC") ||
             resourceModel->getType(index.row()).startsWith("SPR") ||
-            resourceModel->getType(index.row()).startsWith("SMP")
+            resourceModel->getType(index.row()).startsWith("SMP") ||
+            resourceModel->getType(index.row()).startsWith("!") ||
+            resourceModel->getType(index.row()).startsWith("$")
         )) {
-            enableFLC = true;
+            enableImages = true;
         }
     }
 
     // 设置按钮是否可用
     playAudioAction->setEnabled(enableRIFF);
-    playFLCAction->setEnabled(enableFLC);
+    playImagesAction->setEnabled(enableImages);
 }
 
 void MainWindow::treeSelectionChanged(const QModelIndex& current, const QModelIndex& previous) {
