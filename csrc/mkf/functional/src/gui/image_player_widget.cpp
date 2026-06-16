@@ -19,9 +19,13 @@ ImagePlayerWidget::ImagePlayerWidget(QWidget* parent)
       m_scene(nullptr),
       m_pixmapItem(nullptr),
       m_playPauseBtn(nullptr),
+      m_startFrameSlider(nullptr),
+      m_currentFrameSlider(nullptr),
+      m_endFrameSlider(nullptr),
       m_startFrameSpin(nullptr),
       m_currentFrameSpin(nullptr),
       m_endFrameSpin(nullptr),
+      m_speedSpin(nullptr),
       m_loopCheckBox(nullptr) {
     setupUI();
 }
@@ -45,46 +49,86 @@ void ImagePlayerWidget::setupUI() {
     mainLayout->addWidget(m_view);
 
     QWidget* controlBar = new QWidget(this);
-    QHBoxLayout* controlLayout = new QHBoxLayout(controlBar);
+    QVBoxLayout* controlLayout = new QVBoxLayout(controlBar);
     controlLayout->setContentsMargins(8, 4, 8, 4);
-    controlLayout->setSpacing(8);
+    controlLayout->setSpacing(4);
 
-    m_playPauseBtn = new QPushButton(controlBar);
-    m_playPauseBtn->setText("Play");
-    controlLayout->addWidget(m_playPauseBtn);
-
+    QHBoxLayout* row1Layout = new QHBoxLayout();
+    row1Layout->setSpacing(4);
+    m_startFrameSlider = new QSlider(Qt::Horizontal, controlBar);
+    m_startFrameSlider->setMinimum(0);
+    m_startFrameSlider->setMaximum(0);
     m_startFrameSpin = new QSpinBox(controlBar);
-    m_startFrameSpin->setSingleStep(5);
+    m_startFrameSpin->setSingleStep(1);
     m_startFrameSpin->setMinimum(0);
     m_startFrameSpin->setMaximum(0);
-    controlLayout->addWidget(m_startFrameSpin);
+    m_startFrameSpin->setFixedWidth(60);
+    row1Layout->addWidget(m_startFrameSlider);
+    row1Layout->addWidget(m_startFrameSpin);
+    controlLayout->addLayout(row1Layout);
 
+    QHBoxLayout* row2Layout = new QHBoxLayout();
+    row2Layout->setSpacing(4);
+    m_currentFrameSlider = new QSlider(Qt::Horizontal, controlBar);
+    m_currentFrameSlider->setMinimum(0);
+    m_currentFrameSlider->setMaximum(0);
     m_currentFrameSpin = new QSpinBox(controlBar);
     m_currentFrameSpin->setSingleStep(1);
     m_currentFrameSpin->setMinimum(0);
     m_currentFrameSpin->setMaximum(0);
-    controlLayout->addWidget(m_currentFrameSpin);
+    m_currentFrameSpin->setFixedWidth(60);
+    row2Layout->addWidget(m_currentFrameSlider);
+    row2Layout->addWidget(m_currentFrameSpin);
+    controlLayout->addLayout(row2Layout);
 
+    QHBoxLayout* row3Layout = new QHBoxLayout();
+    row3Layout->setSpacing(4);
+    m_endFrameSlider = new QSlider(Qt::Horizontal, controlBar);
+    m_endFrameSlider->setMinimum(0);
+    m_endFrameSlider->setMaximum(0);
     m_endFrameSpin = new QSpinBox(controlBar);
-    m_endFrameSpin->setSingleStep(5);
+    m_endFrameSpin->setSingleStep(1);
     m_endFrameSpin->setMinimum(0);
     m_endFrameSpin->setMaximum(0);
-    controlLayout->addWidget(m_endFrameSpin);
+    m_endFrameSpin->setFixedWidth(60);
+    row3Layout->addWidget(m_endFrameSlider);
+    row3Layout->addWidget(m_endFrameSpin);
+    controlLayout->addLayout(row3Layout);
 
+    QHBoxLayout* row4Layout = new QHBoxLayout();
+    row4Layout->setSpacing(8);
+    m_playPauseBtn = new QPushButton("Play", controlBar);
     m_loopCheckBox = new QCheckBox("Loop", controlBar);
     m_loopCheckBox->setChecked(true);
-    controlLayout->addWidget(m_loopCheckBox);
+    m_speedSpin = new QSpinBox(controlBar);
+    m_speedSpin->setSingleStep(1);
+    m_speedSpin->setMinimum(1);
+    m_speedSpin->setMaximum(120);
+    m_speedSpin->setValue(15);
+    m_speedSpin->setFixedWidth(60);
+    row4Layout->addWidget(m_playPauseBtn);
+    row4Layout->addWidget(m_loopCheckBox);
+    row4Layout->addWidget(m_speedSpin);
+    controlLayout->addLayout(row4Layout);
 
     mainLayout->addWidget(controlBar);
 
     connect(m_playPauseBtn, &QPushButton::clicked,
             this, &ImagePlayerWidget::onPlayPauseClicked);
+    connect(m_startFrameSlider, &QSlider::valueChanged,
+            this, &ImagePlayerWidget::onStartFrameChanged);
     connect(m_startFrameSpin, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &ImagePlayerWidget::onStartFrameChanged);
+    connect(m_endFrameSlider, &QSlider::valueChanged,
+            this, &ImagePlayerWidget::onEndFrameChanged);
     connect(m_endFrameSpin, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &ImagePlayerWidget::onEndFrameChanged);
+    connect(m_currentFrameSlider, &QSlider::valueChanged,
+            this, &ImagePlayerWidget::onCurrentFrameChanged);
     connect(m_currentFrameSpin, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &ImagePlayerWidget::onCurrentFrameChanged);
+    connect(m_speedSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &ImagePlayerWidget::setSpeed);
     connect(m_timer, &QTimer::timeout,
             this, &ImagePlayerWidget::onTimerTick);
 }
@@ -95,13 +139,20 @@ void ImagePlayerWidget::setImages(const std::vector<QImage>& images) {
     m_endFrame = static_cast<int>(m_images.size()) - 1;
     m_currentFrame = 0;
 
+    m_startFrameSlider->setMaximum(m_endFrame);
     m_startFrameSpin->setMaximum(m_endFrame);
+    m_endFrameSlider->setMaximum(m_endFrame);
     m_endFrameSpin->setMaximum(m_endFrame);
+    m_currentFrameSlider->setMaximum(m_endFrame);
+    m_currentFrameSlider->setMinimum(m_startFrame);
     m_currentFrameSpin->setMaximum(m_endFrame);
     m_currentFrameSpin->setMinimum(m_startFrame);
 
+    m_startFrameSlider->setValue(0);
     m_startFrameSpin->setValue(0);
+    m_endFrameSlider->setValue(m_endFrame);
     m_endFrameSpin->setValue(m_endFrame);
+    m_currentFrameSlider->setValue(0);
     m_currentFrameSpin->setValue(0);
 
     calculateBoundingBox();
@@ -189,6 +240,9 @@ void ImagePlayerWidget::updateDisplay() {
     m_scene->setSceneRect(0, 0, frame.width(), frame.height());
     m_view->fitInView(m_scene->sceneRect(), Qt::KeepAspectRatio);
 
+    m_currentFrameSlider->blockSignals(true);
+    m_currentFrameSlider->setValue(m_currentFrame);
+    m_currentFrameSlider->blockSignals(false);
     m_currentFrameSpin->blockSignals(true);
     m_currentFrameSpin->setValue(m_currentFrame);
     m_currentFrameSpin->blockSignals(false);
@@ -259,12 +313,19 @@ void ImagePlayerWidget::onPlayPauseClicked() {
 
 void ImagePlayerWidget::onStartFrameChanged(int value) {
     m_startFrame = value;
+    m_startFrameSlider->blockSignals(true);
+    m_startFrameSlider->setValue(m_startFrame);
+    m_startFrameSlider->blockSignals(false);
     if (m_startFrame > m_endFrame) {
+        m_endFrameSlider->blockSignals(true);
+        m_endFrameSlider->setValue(m_startFrame);
+        m_endFrameSlider->blockSignals(false);
         m_endFrameSpin->blockSignals(true);
         m_endFrameSpin->setValue(m_startFrame);
         m_endFrameSpin->blockSignals(false);
         m_endFrame = m_startFrame;
     }
+    m_currentFrameSlider->setMinimum(m_startFrame);
     m_currentFrameSpin->setMinimum(m_startFrame);
     if (m_currentFrame < m_startFrame) {
         seek(m_startFrame);
@@ -273,12 +334,19 @@ void ImagePlayerWidget::onStartFrameChanged(int value) {
 
 void ImagePlayerWidget::onEndFrameChanged(int value) {
     m_endFrame = value;
+    m_endFrameSlider->blockSignals(true);
+    m_endFrameSlider->setValue(m_endFrame);
+    m_endFrameSlider->blockSignals(false);
     if (m_endFrame < m_startFrame) {
+        m_startFrameSlider->blockSignals(true);
+        m_startFrameSlider->setValue(m_endFrame);
+        m_startFrameSlider->blockSignals(false);
         m_startFrameSpin->blockSignals(true);
         m_startFrameSpin->setValue(m_endFrame);
         m_startFrameSpin->blockSignals(false);
         m_startFrame = m_endFrame;
     }
+    m_currentFrameSlider->setMaximum(m_endFrame);
     m_currentFrameSpin->setMaximum(m_endFrame);
     if (m_currentFrame > m_endFrame) {
         seek(m_endFrame);

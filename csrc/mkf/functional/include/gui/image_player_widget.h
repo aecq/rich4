@@ -11,6 +11,7 @@
 #include <QSpinBox>
 #include <QCheckBox>
 #include <QHBoxLayout>
+#include <QSlider>
 #include <QVBoxLayout>
 #include <vector>
 
@@ -68,8 +69,12 @@ private:
     QGraphicsPixmapItem* m_pixmapItem;
 
     QPushButton* m_playPauseBtn;
+    QSlider* m_startFrameSlider;
+    QSlider* m_currentFrameSlider;
+    QSlider* m_endFrameSlider;
     QSpinBox* m_startFrameSpin;
     QSpinBox* m_currentFrameSpin;
     QSpinBox* m_endFrameSpin;
+    QSpinBox* m_speedSpin;
     QCheckBox* m_loopCheckBox;
 };
