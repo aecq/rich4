@@ -18,6 +18,7 @@ set(SOURCES
     src/gui/graphics_text_window.cpp
     src/gui/map_graphics_view.cpp
     src/gui/image_player_widget.cpp
+    src/gui/image_player_window.cpp
     src/gui/main_window.cpp
     src/main.cpp
     ../mkf_decompress.c
@@ -32,6 +33,7 @@ set(HEADERS
     include/gui/graphics_text_window.h
     include/gui/map_graphics_view.h
     include/gui/image_player_widget.h
+    include/gui/image_player_window.h
     include/gui/main_window.h
     ../mkf_decompress.h
 )
