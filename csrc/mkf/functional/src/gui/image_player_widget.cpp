@@ -333,8 +333,6 @@ void ImagePlayerWidget::onStartFrameChanged(int value) {
         m_endFrameSpin->blockSignals(false);
         m_endFrame = m_startFrame;
     }
-    m_currentFrameSlider->setMinimum(m_startFrame);
-    m_currentFrameSpin->setMinimum(m_startFrame);
     if (m_currentFrame < m_startFrame) {
         seek(m_startFrame);
     }
@@ -357,15 +355,17 @@ void ImagePlayerWidget::onEndFrameChanged(int value) {
         m_startFrameSpin->blockSignals(false);
         m_startFrame = m_endFrame;
     }
-    m_currentFrameSlider->setMaximum(m_endFrame);
-    m_currentFrameSpin->setMaximum(m_endFrame);
     if (m_currentFrame > m_endFrame) {
         seek(m_endFrame);
     }
 }
 
 void ImagePlayerWidget::onCurrentFrameChanged(int value) {
-    if (value != m_currentFrame) {
+    if (value < m_startFrame) {
+        seek(m_startFrame);
+    } else if (value > m_endFrame) {
+        seek(m_endFrame);
+    } else if (value != m_currentFrame) {
         seek(value);
     } else {
         m_currentFrameSlider->blockSignals(true);
