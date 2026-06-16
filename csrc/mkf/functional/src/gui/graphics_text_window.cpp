@@ -100,6 +100,9 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
             displayRawImage(index, resourceModel, true);
         } else if (type.startsWith("MAP")) {
             displayMap(index, resourceModel);
+        } else if (type.startsWith("FLC")) {
+            m_images = parseFLIC(resourceModel->getResource(index.row()));
+            displayImages();
         }
     } else if (depth == 2) {
         QModelIndex parent = index.parent();
