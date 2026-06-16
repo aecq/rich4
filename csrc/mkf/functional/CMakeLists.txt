@@ -14,6 +14,7 @@ set(SOURCES
     src/core/utils/cache.cpp
     src/core/utils/resource_model.cpp
     src/core/utils/audio_player.cpp
+    src/core/utils/flic_decoder.cpp
     src/gui/graphics_text_window.cpp
     src/gui/map_graphics_view.cpp
     src/gui/main_window.cpp
@@ -25,6 +26,8 @@ set(HEADERS
     include/core/utils/cache.h
     include/core/utils/resource_model.h
     include/core/utils/audio_player.h
+    include/core/utils/flic.h
+    include/core/utils/flic_details.h
     include/gui/graphics_text_window.h
     include/gui/map_graphics_view.h
     include/gui/main_window.h
