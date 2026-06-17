@@ -8,7 +8,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 COMPONENTS Core Core5Compat Gui Widgets REQUIRED)
+find_package(Qt6 COMPONENTS Core Gui Widgets REQUIRED)
 
 add_library(ma_lib STATIC
     src/core/utils/miniaudio.c
@@ -76,4 +76,4 @@ target_include_directories(MkfViewer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_link_libraries(MkfViewer Qt6::Core Qt6::Core5Compat Qt6::Gui Qt6::Widgets ma_lib)
+target_link_libraries(MkfViewer Qt6::Core Qt6::Gui Qt6::Widgets ma_lib)

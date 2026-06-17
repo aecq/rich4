@@ -4,14 +4,15 @@
 #include "core/types/map.h"
 #include "core/types/resource_header.h"
 #include "core/types/spr_smp_header.h"
+#include "core/utils/big5hkscs_table.h"
 #include "core/utils/check.h"
 #include "core/utils/flic.h"
 #include <QByteArray>
 #include <QFile>
 #include <QImage>
 #include <QPixmap>
-#include <QTextCodec>
 #include <cstdint>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -308,6 +309,58 @@ static inline int indexOfNull(const QByteArray& bytes) {
     return i;
 }
 
+static void appendUtf8(std::string& s, uint32_t cp)
+{
+    if (cp <= 0x7F)
+        s += static_cast<char>(cp);
+    else if (cp <= 0x7FF)
+    {
+        s += static_cast<char>(0xC0 | ((cp >> 6) & 0x1F));
+        s += static_cast<char>(0x80 | (cp & 0x3F));
+    }
+    else if (cp <= 0xFFFF)
+    {
+        s += static_cast<char>(0xE0 | ((cp >> 12) & 0x0F));
+        s += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+        s += static_cast<char>(0x80 | (cp & 0x3F));
+    }
+    else
+    {
+        s += static_cast<char>(0xF0 | ((cp >> 18) & 0x07));
+        s += static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
+        s += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+        s += static_cast<char>(0x80 | (cp & 0x3F));
+    }
+}
+
+static inline std::string decodeBig5hkscsToUtf8(const uint8_t* data, size_t len)
+{
+    std::string out;
+    out.reserve(len * 4);
+    const auto& map = getBig5HKSCSTable();
+    size_t i = 0;
+    while (i < len)
+    {
+        uint8_t b1 = data[i++];
+        if (b1 < 0x80)
+        {
+            out.push_back(static_cast<char>(b1));
+            continue;
+        }
+        if (i >= len) break;
+        uint8_t b2 = data[i++];
+        uint16_t code = (static_cast<uint16_t>(b1) << 8) | b2;
+        if (code >= 0xFEFF || map[code] == 0) {
+            uint32_t rep = 0xFFFD;
+            appendUtf8(out, rep);
+            continue;
+        }
+        const auto& entry = map[code];
+        appendUtf8(out, entry);
+    }
+    return out;
+}
+
 // ====================
 //  parseBig5Simple(bytes, size): 从 const QByteArray& bytes 中解析 Big5 编码的文本
 // ====================
@@ -315,8 +368,8 @@ static inline QString parseBig5Simple(const QByteArray& bytes, size_t size) {
     if (size <= 0 || bytes == nullptr) {
         return QString();
     }
-    QTextCodec* codec = QTextCodec::codecForName("Big5");
-    return codec->toUnicode(bytes.left(size));
+    std::string utf8 = decodeBig5hkscsToUtf8(reinterpret_cast<const uint8_t*>(bytes.constData()), size);
+    return QString::fromStdString(utf8);
 }
 
 // ====================
