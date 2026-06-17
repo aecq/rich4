@@ -44,6 +44,7 @@ target_compile_definitions(ma_lib PRIVATE
 set(SOURCES
     src/core/utils/cache.cpp
     src/core/utils/resource_model.cpp
+    src/core/utils/big5hkscs_table.cpp
     src/core/utils/flic_decoder.cpp
     src/gui/graphics_text_window.cpp
     src/gui/map_graphics_view.cpp
@@ -57,6 +58,7 @@ set(SOURCES
 set(HEADERS
     include/core/utils/cache.h
     include/core/utils/resource_model.h
+    include/core/utils/big5hkscs_table.h
     include/core/utils/flic.h
     include/core/utils/flic_details.h
     include/gui/graphics_text_window.h
