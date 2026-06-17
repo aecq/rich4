@@ -10,6 +10,7 @@ ImagePlayerWidget::ImagePlayerWidget(QWidget* parent)
       m_isPlaying(false),
       m_loop(true),
       m_mask(true),
+      m_backgroundColorIndex(0),
       m_fps(15),
       m_timer(new QTimer(this)),
       m_canvasWidth(0),
@@ -48,6 +49,7 @@ void ImagePlayerWidget::setupUI() {
     m_view->setRenderHint(QPainter::SmoothPixmapTransform);
     m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     m_view->setResizeAnchor(QGraphicsView::AnchorUnderMouse);
+    m_view->setBackgroundBrush(colors[m_backgroundColorIndex].second);
     mainLayout->addWidget(m_view);
 
     QWidget* controlBar = new QWidget(this);
@@ -104,6 +106,7 @@ void ImagePlayerWidget::setupUI() {
     m_loopCheckBox->setChecked(true);
     m_maskCheckBox = new QCheckBox("Mask", controlBar);
     m_maskCheckBox->setChecked(true);
+    m_backgroundColorBtn = new QPushButton(colors[m_backgroundColorIndex].first, controlBar);
     m_speedSpin = new QSpinBox(controlBar);
     m_speedSpin->setSingleStep(1);
     m_speedSpin->setMinimum(1);
@@ -113,6 +116,7 @@ void ImagePlayerWidget::setupUI() {
     row4Layout->addWidget(m_playPauseBtn);
     row4Layout->addWidget(m_loopCheckBox);
     row4Layout->addWidget(m_maskCheckBox);
+    row4Layout->addWidget(m_backgroundColorBtn);
     row4Layout->addWidget(m_speedSpin);
     controlLayout->addLayout(row4Layout);
 
@@ -138,6 +142,8 @@ void ImagePlayerWidget::setupUI() {
             this, &ImagePlayerWidget::setLoop);
     connect(m_maskCheckBox, &QCheckBox::toggled,
             this, &ImagePlayerWidget::setMask);
+    connect(m_backgroundColorBtn, &QPushButton::clicked,
+            this, &ImagePlayerWidget::onBackgroundColorClicked);
     connect(m_timer, &QTimer::timeout,
             this, &ImagePlayerWidget::onTimerTick);
 }
@@ -329,6 +335,12 @@ void ImagePlayerWidget::onTimerTick() {
 
     updateDisplay();
     emit frameChanged(m_currentFrame);
+}
+
+void ImagePlayerWidget::onBackgroundColorClicked() {
+    m_backgroundColorIndex = (m_backgroundColorIndex + 1) % colors.size();
+    m_backgroundColorBtn->setText(colors[m_backgroundColorIndex].first);
+    m_view->setBackgroundBrush(colors[m_backgroundColorIndex].second);
 }
 
 void ImagePlayerWidget::onPlayPauseClicked() {

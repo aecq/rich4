@@ -13,6 +13,7 @@
 #include <QHBoxLayout>
 #include <QSlider>
 #include <QVBoxLayout>
+#include <utility>
 #include <vector>
 
 class ImagePlayerWidget : public QWidget {
@@ -38,12 +39,20 @@ signals:
 
 private slots:
     void onTimerTick();
+    void onBackgroundColorClicked();
     void onPlayPauseClicked();
     void onStartFrameChanged(int value);
     void onEndFrameChanged(int value);
     void onCurrentFrameChanged(int value);
 
 private:
+    inline static const std::vector<std::pair<QString, QColor>> colors = {
+        std::make_pair(QString("Dark Green"), Qt::darkGreen),
+        std::make_pair(QString("Black"), Qt::black),
+        std::make_pair(QString("Light Gray"), Qt::lightGray),
+        std::make_pair(QString("White"), Qt::white),
+    };
+
     void setupUI();
     void calculateBoundingBox();
     QImage compositeFrame(int index);
@@ -58,6 +67,7 @@ private:
     bool m_isPlaying;
     bool m_loop;
     bool m_mask;
+    int m_backgroundColorIndex;
     int m_fps;
     QTimer* m_timer;
 
@@ -80,4 +90,5 @@ private:
     QSpinBox* m_speedSpin;
     QCheckBox* m_loopCheckBox;
     QCheckBox* m_maskCheckBox;
+    QPushButton* m_backgroundColorBtn;
 };
