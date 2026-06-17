@@ -9,6 +9,7 @@ ImagePlayerWidget::ImagePlayerWidget(QWidget* parent)
       m_endFrame(0),
       m_isPlaying(false),
       m_loop(true),
+      m_mask(true),
       m_fps(15),
       m_timer(new QTimer(this)),
       m_canvasWidth(0),
@@ -26,7 +27,8 @@ ImagePlayerWidget::ImagePlayerWidget(QWidget* parent)
       m_currentFrameSpin(nullptr),
       m_endFrameSpin(nullptr),
       m_speedSpin(nullptr),
-      m_loopCheckBox(nullptr) {
+      m_loopCheckBox(nullptr),
+      m_maskCheckBox(nullptr) {
     setupUI();
 }
 
@@ -100,6 +102,8 @@ void ImagePlayerWidget::setupUI() {
     m_playPauseBtn = new QPushButton("Play", controlBar);
     m_loopCheckBox = new QCheckBox("Loop", controlBar);
     m_loopCheckBox->setChecked(true);
+    m_maskCheckBox = new QCheckBox("Mask", controlBar);
+    m_maskCheckBox->setChecked(true);
     m_speedSpin = new QSpinBox(controlBar);
     m_speedSpin->setSingleStep(1);
     m_speedSpin->setMinimum(1);
@@ -108,6 +112,7 @@ void ImagePlayerWidget::setupUI() {
     m_speedSpin->setFixedWidth(60);
     row4Layout->addWidget(m_playPauseBtn);
     row4Layout->addWidget(m_loopCheckBox);
+    row4Layout->addWidget(m_maskCheckBox);
     row4Layout->addWidget(m_speedSpin);
     controlLayout->addLayout(row4Layout);
 
@@ -131,6 +136,8 @@ void ImagePlayerWidget::setupUI() {
             this, &ImagePlayerWidget::setSpeed);
     connect(m_loopCheckBox, &QCheckBox::toggled,
             this, &ImagePlayerWidget::setLoop);
+    connect(m_maskCheckBox, &QCheckBox::toggled,
+            this, &ImagePlayerWidget::setMask);
     connect(m_timer, &QTimer::timeout,
             this, &ImagePlayerWidget::onTimerTick);
 }
@@ -232,6 +239,16 @@ void ImagePlayerWidget::updateDisplay() {
 
     QImage frame = compositeFrame(m_currentFrame);
     QPixmap pixmap = QPixmap::fromImage(frame);
+    if (m_mask) {
+        QColor topLeft = frame.pixel(0, 0);
+        QColor topRight = frame.pixel(frame.width() - 1, 0);
+        QColor bottomLeft = frame.pixel(0, frame.height() - 1);
+        QColor color = topRight;;
+        if (topLeft == topRight || topLeft == bottomLeft) {
+            color = topLeft;
+        }
+        pixmap.setMask(pixmap.createMaskFromColor(color));
+    }
 
     if (!m_pixmapItem) {
         m_pixmapItem = m_scene->addPixmap(pixmap);
@@ -289,6 +306,12 @@ void ImagePlayerWidget::setSpeed(int fps) {
 void ImagePlayerWidget::setLoop(bool enabled) {
     m_loop = enabled;
     m_loopCheckBox->setChecked(enabled);
+}
+
+void ImagePlayerWidget::setMask(bool enabled) {
+    m_mask = enabled;
+    m_maskCheckBox->setChecked(enabled);
+    updateDisplay();
 }
 
 void ImagePlayerWidget::onTimerTick() {

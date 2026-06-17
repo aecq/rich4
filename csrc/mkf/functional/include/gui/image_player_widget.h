@@ -31,6 +31,7 @@ public:
 
     void setSpeed(int fps);
     void setLoop(bool enabled);
+    void setMask(bool enabled);
 
 signals:
     void frameChanged(int index);
@@ -56,6 +57,7 @@ private:
     int m_endFrame;
     bool m_isPlaying;
     bool m_loop;
+    bool m_mask;
     int m_fps;
     QTimer* m_timer;
 
@@ -77,4 +79,5 @@ private:
     QSpinBox* m_endFrameSpin;
     QSpinBox* m_speedSpin;
     QCheckBox* m_loopCheckBox;
+    QCheckBox* m_maskCheckBox;
 };
