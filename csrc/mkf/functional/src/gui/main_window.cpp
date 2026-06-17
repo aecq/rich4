@@ -23,6 +23,7 @@
 #include <QProcess>
 #include <QToolBar>
 #include <QItemSelectionModel>
+#include <miniaudio.h>
 #include <memory>
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
@@ -31,9 +32,19 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     setupConnections();
     setWindowTitle("MKF File Viewer");
     resize(500, 600);
+    // miniaudio
+    ma_result result = ma_engine_init(NULL, &engine);
+    if (result != MA_SUCCESS) {
+        qDebug() << "Failed to initialize audio engine.";
+        return;
+    }
+    qDebug() << "Audio engine initialized.";
+    engine_initialized = true;
 }
 
 MainWindow::~MainWindow() {
+    ma_engine_uninit(&engine);
+    engine_initialized = false;
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
@@ -135,9 +146,30 @@ void MainWindow::playAudio() {
     }
     int depth = indexDepth(index);
     if (depth == 1 && resourceModel->getSignature(index.row()).startsWith("RIFF")) {
-        statusBar()->showMessage("Playing audio at index:" + QString::number(index.row()));
-        QByteArray data = resourceModel->getResource(index.row());
-        AudioPlayer::instance().play(data);
+        int row = index.row();
+        statusBar()->showMessage("Playing audio at index:" + QString::number(row));
+        QByteArray data = resourceModel->getResource(row);
+        if (!engine_initialized) {
+            statusBar()->showMessage("Audio engine not initialized.");
+            return;
+        }
+        QString defaultName = QString("%1%2%3.%4")
+            .arg(resourceModel->getBasename())
+            .arg(row, 4, 10, QChar('0'))
+            .arg(legalFilename(resourceModel->getComment(row)))
+            .arg(resourceModel->getType(row).size() > 0 ? resourceModel->getType(row) : "bin");
+        QString wavFolder = resourceModel->getCSVFolder() + "/wav/";
+        QDir dir(wavFolder);
+        if (!dir.exists()) {
+            dir.mkpath(wavFolder);
+        }
+        QString filepath = wavFolder + defaultName;
+        QFile file(filepath);
+        if (!file.exists()) {
+            resourceModel->exportBinary(row, filepath);
+        }
+        ma_engine_play_sound(&engine, filepath.toStdString().c_str(), NULL);
+        statusBar()->showMessage("Playing audio at index:" + QString::number(row));
     } else {
         statusBar()->showMessage("Please select an audio resource.");
     }

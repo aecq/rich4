@@ -6,6 +6,7 @@
 #include <QMainWindow>
 #include <QStandardItemModel>
 #include <QTreeView>
+#include <miniaudio.h>
 class GraphicsTextWindow;
 class ImagePlayerWindow;
 
@@ -43,6 +44,8 @@ protected:
     void closeEvent(QCloseEvent* event) override;
 
 private:
+    ma_engine engine;
+    bool engine_initialized = false;
     // Cache* cache = nullptr;
     ResourceModel* resourceModel = nullptr;
     QTreeView* treeView = nullptr;

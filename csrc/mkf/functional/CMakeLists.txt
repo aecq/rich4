@@ -10,6 +10,37 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 COMPONENTS Core Core5Compat Gui Widgets Multimedia REQUIRED)
 
+add_library(ma_lib STATIC
+    src/core/utils/miniaudio.c
+)
+
+target_include_directories(ma_lib
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/include/core/utils
+)
+
+target_compile_definitions(ma_lib PRIVATE
+    MA_ENABLE_ONLY_SPECIFIC_BACKENDS
+    MA_ENABLE_WASAPI
+    MA_NO_DSOUND
+    MA_NO_WINMM
+    MA_NO_ALSA
+    MA_NO_PULSEAUDIO
+    MA_NO_JACK
+    MA_NO_COREAUDIO
+    MA_NO_AAUDIO
+    MA_NO_OPENSL
+    MA_NO_WEBAUDIO
+    MA_NO_SNDIO
+    MA_NO_AUDIO4
+    MA_NO_OSS
+    MA_NO_CUSTOM
+    MA_NO_NULL
+    MA_NO_MP3
+    MA_NO_FLAC
+    MA_USE_STDINT
+)
+
 set(SOURCES
     src/core/utils/cache.cpp
     src/core/utils/resource_model.cpp
@@ -45,4 +76,4 @@ target_include_directories(MkfViewer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_link_libraries(MkfViewer Qt6::Core Qt6::Core5Compat Qt6::Gui Qt6::Widgets Qt6::Multimedia)
+target_link_libraries(MkfViewer Qt6::Core Qt6::Core5Compat Qt6::Gui Qt6::Widgets Qt6::Multimedia ma_lib)
