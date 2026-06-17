@@ -8,7 +8,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 COMPONENTS Core Core5Compat Gui Widgets Multimedia REQUIRED)
+find_package(Qt6 COMPONENTS Core Core5Compat Gui Widgets REQUIRED)
 
 add_library(ma_lib STATIC
     src/core/utils/miniaudio.c
@@ -44,7 +44,6 @@ target_compile_definitions(ma_lib PRIVATE
 set(SOURCES
     src/core/utils/cache.cpp
     src/core/utils/resource_model.cpp
-    src/core/utils/audio_player.cpp
     src/core/utils/flic_decoder.cpp
     src/gui/graphics_text_window.cpp
     src/gui/map_graphics_view.cpp
@@ -58,7 +57,6 @@ set(SOURCES
 set(HEADERS
     include/core/utils/cache.h
     include/core/utils/resource_model.h
-    include/core/utils/audio_player.h
     include/core/utils/flic.h
     include/core/utils/flic_details.h
     include/gui/graphics_text_window.h
@@ -76,4 +74,4 @@ target_include_directories(MkfViewer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_link_libraries(MkfViewer Qt6::Core Qt6::Core5Compat Qt6::Gui Qt6::Widgets Qt6::Multimedia ma_lib)
+target_link_libraries(MkfViewer Qt6::Core Qt6::Core5Compat Qt6::Gui Qt6::Widgets ma_lib)

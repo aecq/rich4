@@ -6,7 +6,6 @@
 #include "core/types/resource_header.h"
 #include "core/types/spr_smp_header.h"
 #include "core/utils/resource_model.h"
-#include "core/utils/audio_player.h"
 #include "gui/graphics_text_window.h"
 #include <QApplication>
 #include <QCloseEvent>
