@@ -1,5 +1,6 @@
 #include "gui/graphics_text_window.h"
 #include "core/io/parse.h"
+#include "core/io/parse_flic.h"
 #include "gui/main_window.h"
 #include <QFileDialog>
 #include <QGraphicsEllipseItem>

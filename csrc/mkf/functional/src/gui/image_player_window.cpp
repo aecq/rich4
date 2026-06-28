@@ -1,5 +1,6 @@
 #include "gui/image_player_window.h"
 #include "gui/main_window.h"
+#include "core/io/parse_flic.h"
 #include "core/utils/flic.h"
 #include <QVBoxLayout>
 
