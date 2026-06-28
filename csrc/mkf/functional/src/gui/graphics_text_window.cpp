@@ -175,6 +175,7 @@ void GraphicsTextWindow::displayMap(const QModelIndex& index, ResourceModel* res
         }
     }
     std::vector<QImage> images = parseImages(resourceModel->getResource(3 * count));
+    std::vector<GraphInfo> infos = parseGraphInfos(resourceModel->getResource(3 * count));
 
     mapScene->clear();
 
@@ -209,7 +210,8 @@ void GraphicsTextWindow::displayMap(const QModelIndex& index, ResourceModel* res
             QBitmap mask = pixmap.createMaskFromColor(Qt::black);
             pixmap.setMask(mask);
             QGraphicsPixmapItem* pixmapItem = mapScene->addPixmap(pixmap);
-            pixmapItem->setPos(x - images[chunk].width() / 2, y - images[chunk].height() / 2);
+            // pixmapItem->setPos(x - images[chunk].width() / 2, y - images[chunk].height() / 2);
+            pixmapItem->setPos(x - infos[chunk].x, y - infos[chunk].y);
         }
 
         // 创建文本 item
@@ -217,7 +219,8 @@ void GraphicsTextWindow::displayMap(const QModelIndex& index, ResourceModel* res
         int denominator = 2000;
         if (name.length() > 0) {
             QGraphicsTextItem* textItem = mapScene->addText(name);
-            textItem->setPos(x - textItem->boundingRect().width() / 2, y + ((node.special > 0) ? images[chunk].height() / 2 : 0));
+            // textItem->setPos(x - textItem->boundingRect().width() / 2, y + ((node.special > 0) ? images[chunk].height() / 2 : 0));
+            textItem->setPos(x - textItem->boundingRect().width() / 2, y + ((node.special > 0) ? infos[chunk].y : 0));
             textItem->setDefaultTextColor(node.special > 0 ? Qt::darkCyan : Qt::gray);
             textItem->setDefaultTextColor(colors[node.type / denominator]);
         }
@@ -225,7 +228,8 @@ void GraphicsTextWindow::displayMap(const QModelIndex& index, ResourceModel* res
         if (node.type != 0) {
             QString typeStr = QString::number(node.type);
             QGraphicsTextItem* typeItem = mapScene->addText(typeStr);
-            typeItem->setPos(x - typeItem->boundingRect().width() / 2, y - ((node.special > 0) ? images[chunk].height() / 2 : 0) - typeItem->boundingRect().height());
+            // typeItem->setPos(x - typeItem->boundingRect().width() / 2, y - ((node.special > 0) ? images[chunk].height() / 2 : 0) - typeItem->boundingRect().height());
+            typeItem->setPos(x - typeItem->boundingRect().width() / 2, y - ((node.special > 0) ? infos[chunk].y : 0) - typeItem->boundingRect().height());
             typeItem->setDefaultTextColor(colors[node.type / denominator]);
         }
 
