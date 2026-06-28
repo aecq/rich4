@@ -83,8 +83,28 @@ target_link_libraries(MkfViewer Qt6::Core Qt6::Gui Qt6::Widgets ma_lib)
 # --- MapPanelWidget API contract test (RED -> GREEN) ---
 add_executable(test_map_panel_widget
     test_map_panel_widget.cpp
+    # MapPanelWidget 自身
     src/gui/map_panel_widget.cpp
     include/gui/map_panel_widget.h
+    # MapPanelWidget 直接依赖：MapGraphicsView（Q_OBJECT + 构造函数中 new）
+    src/gui/map_graphics_view.cpp
+    include/gui/map_graphics_view.h
+    # MapPanelWidget 参数依赖：ResourceModel（Q_OBJECT + loadMap 槽形参）
+    src/core/utils/resource_model.cpp
+    include/core/utils/resource_model.h
+    # ResourceModel 依赖：Cache
+    src/core/utils/cache.cpp
+    include/core/utils/cache.h
+    # parse.h 中 static inline 函数依赖的翻译表实现
+    src/core/utils/big5hkscs_table.cpp
+    include/core/utils/big5hkscs_table.h
+    # parse.h 中 parseImages 等依赖的 FLIC 解码实现
+    src/core/utils/flic_decoder.cpp
+    include/core/utils/flic.h
+    include/core/utils/flic_details.h
+    # parse.h 中 extern "C" 声明的 mkf_decompress 实现
+    ../mkf_decompress.c
+    ../mkf_decompress.h
 )
 target_include_directories(test_map_panel_widget PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
