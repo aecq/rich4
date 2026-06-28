@@ -98,10 +98,6 @@ add_executable(test_map_panel_widget
     # parse.h 中 static inline 函数依赖的翻译表实现
     src/core/utils/big5hkscs_table.cpp
     include/core/utils/big5hkscs_table.h
-    # parse.h 中 parseImages 等依赖的 FLIC 解码实现
-    src/core/utils/flic_decoder.cpp
-    include/core/utils/flic.h
-    include/core/utils/flic_details.h
     # parse.h 中 extern "C" 声明的 mkf_decompress 实现
     ../mkf_decompress.c
     ../mkf_decompress.h
