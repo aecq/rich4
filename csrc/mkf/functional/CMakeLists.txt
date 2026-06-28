@@ -48,6 +48,7 @@ set(SOURCES
     src/core/utils/flic_decoder.cpp
     src/gui/graphics_text_window.cpp
     src/gui/map_graphics_view.cpp
+    src/gui/map_panel_widget.cpp
     src/gui/image_player_widget.cpp
     src/gui/image_player_window.cpp
     src/gui/main_window.cpp
@@ -63,6 +64,7 @@ set(HEADERS
     include/core/utils/flic_details.h
     include/gui/graphics_text_window.h
     include/gui/map_graphics_view.h
+    include/gui/map_panel_widget.h
     include/gui/image_player_widget.h
     include/gui/image_player_window.h
     include/gui/main_window.h
@@ -77,3 +79,15 @@ target_include_directories(MkfViewer PRIVATE
 )
 
 target_link_libraries(MkfViewer Qt6::Core Qt6::Gui Qt6::Widgets ma_lib)
+
+# --- MapPanelWidget API contract test (RED -> GREEN) ---
+add_executable(test_map_panel_widget
+    test_map_panel_widget.cpp
+    src/gui/map_panel_widget.cpp
+    include/gui/map_panel_widget.h
+)
+target_include_directories(test_map_panel_widget PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+target_link_libraries(test_map_panel_widget Qt6::Core Qt6::Gui Qt6::Widgets ma_lib)
