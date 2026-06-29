@@ -205,6 +205,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
                              y + textItem->boundingRect().height() / 2);
             textItem->setDefaultTextColor(Qt::red);
         }
+        // 可视化定位点
         QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
         dot->setBrush(Qt::gray);
     }
@@ -221,6 +222,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
                              y + textItem->boundingRect().height() / 2);
             textItem->setDefaultTextColor(Qt::blue);
         }
+        // 可视化定位点
         QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
         dot->setBrush(Qt::gray);
     }
@@ -237,6 +239,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
                              y + textItem->boundingRect().height() / 2);
             textItem->setDefaultTextColor(Qt::green);
         }
+        // 可视化定位点
         QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
         dot->setBrush(Qt::green);
     }
