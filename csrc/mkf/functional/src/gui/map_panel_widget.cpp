@@ -17,6 +17,7 @@ MapPanelWidget::MapPanelWidget(QWidget* parent)
     , m_pivotY(static_cast<float>(kSceneSize) * 0.5f)
     , m_mapView(nullptr)
     , m_mapScene(nullptr)
+    , m_resourceModel(nullptr)
 {
     setupUI();
 }
@@ -49,6 +50,9 @@ void MapPanelWidget::setupUI() {
     // 3. 鼠标位置信号转发
     connect(m_mapView, &MapGraphicsView::mousePositionChanged,
             this, &MapPanelWidget::onMousePositionChanged);
+
+    connect(m_mapView, &MapGraphicsView::northRotateBy,
+            this, &MapPanelWidget::onNorthRotateBy);
 }
 
 // ---------------------------------------------------------------------------
@@ -65,6 +69,9 @@ void MapPanelWidget::loadMap(const QModelIndex& mapIndex, ResourceModel* resourc
 
     QString text = buildMapText(mapIndex, resourceModel);
     emit mapTextReady(text);
+
+    m_mapIndex = mapIndex;
+    m_resourceModel = resourceModel;
 }
 
 // ---------------------------------------------------------------------------
@@ -76,6 +83,9 @@ void MapPanelWidget::clear() {
         m_mapScene->clear();
     }
     emit mapTextReady(QString());
+
+    m_mapIndex = QModelIndex();
+    m_resourceModel = nullptr;
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +97,9 @@ void MapPanelWidget::setNorthDirection(int topLeftIndex) {
     if (topLeftIndex > kTopLeftIndexMax) topLeftIndex = kTopLeftIndexMax;
     m_northDirection = topLeftIndex;
     // TODO: Ground 旋转重新计算 chunk 索引 + 场景旋转矩阵
+    if (m_mapIndex.isValid() && m_resourceModel != nullptr) {
+        populateScene(m_mapIndex, m_resourceModel);
+    }
 }
 
 int MapPanelWidget::northDirection() const {
@@ -163,6 +176,16 @@ void MapPanelWidget::setLayerVisible(int nodeTypeMin, int nodeTypeMax, bool visi
 void MapPanelWidget::onMousePositionChanged(int x, int y) {
     QString text = QString("Map Scene XY: %1, %2").arg(x).arg(y);
     emit statusMessage(text);
+}
+
+void MapPanelWidget::onNorthRotateBy(int delta) {
+    // 方向是环形的 0..7，用正余数做循环：0-1=7，7+1=0
+    // 若想要"到边界就停止"的 clamp 语义，直接改为：
+    //   setNorthDirection(m_northDirection + delta);
+    const int S = kTopLeftIndexMax - kTopLeftIndexMin + 1;  // = 8
+    int next = m_northDirection + delta;
+    next = ((next % S) + S) % S;
+    setNorthDirection(next);
 }
 
 // ===========================================================================

@@ -66,6 +66,7 @@ signals:
 private slots:
     // MapGraphicsView 鼠标移动回调：转发场景坐标
     void onMousePositionChanged(int x, int y);
+    void onNorthRotateBy(int delta);
 
 private:
     void setupUI();
@@ -104,6 +105,8 @@ private:
     int m_northDirection;   // TopLeftIndex 0..7；初值 = kNorthTopLeftIndex
     float m_pivotX;         // 旋转枢轴 X（画布/场景坐标，运行时可改）
     float m_pivotY;         // 旋转枢轴 Y
+    QModelIndex m_mapIndex;
+    ResourceModel* m_resourceModel;
 
     // --- UI ---
     MapGraphicsView* m_mapView;
