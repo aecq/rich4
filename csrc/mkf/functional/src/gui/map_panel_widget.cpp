@@ -130,6 +130,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     }
     std::vector<QImage> nodeImages = parseImages(resourceModel->getResource(3 * count));
     std::vector<GraphInfo> nodeInfos  = parseGraphInfos(resourceModel->getResource(3 * count));
+    const QColor TRANSPARENT(Qt::black);
 
     m_mapScene->clear();
 
@@ -157,7 +158,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
                            || (node.special <= 0 && 0 < chunk && chunk < (int)nodeImages.size());
         if (hasImage) {
             QPixmap pixmap = QPixmap::fromImage(nodeImages[chunk]);
-            QBitmap mask = pixmap.createMaskFromColor(Qt::black);
+            QBitmap mask = pixmap.createMaskFromColor(TRANSPARENT);
             pixmap.setMask(mask);
             QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
             pixmapItem->setPos(x - nodeInfos[chunk].x, y - nodeInfos[chunk].y);
