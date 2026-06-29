@@ -124,18 +124,18 @@ std::pair<float, float> MapPanelWidget::rotateAround(float gx, float gy, int top
 }
 
 int MapPanelWidget::offsetChunkN(int absChunk, int base, int S, int i) const {
-    // 用户定义：k' = (k + i) % S，返回 base + k'。
+    // 用户定义：k' = (k - i) % S，返回 base + k'。
     //   S        = 该资源的 chunk 总数（当前使用 1 / 2 / 8；公式本身不限制 S）
     //   k        = absChunk - base  ∈ [0, S-1]
     //   结果 k'  = 非负的正余数 [0, S-1]
     Q_ASSERT(S > 0);
     const int k = absChunk - base;
-    int kNew = (k + i) % S;
+    int kNew = (k - i) % S;
     // C++11 起 % 对负数是向零取整（-3 % 8 = -3），这里转成正余数。
     if (kNew < 0) {
         kNew += S;
     }
-    // 约定校验：验证后如果方向反了，把 (k + i) 改成 (k - i) 即可（两处一起改）。
+    // 约定校验：验证后如果方向反了，把 (k - i) 改成 (k + i) 即可（两处一起改）。
     return base + kNew;
 }
 
