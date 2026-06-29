@@ -292,10 +292,14 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     if (m_mapNodes.empty()) return;
 
     // ------------------------------------------------------------------
-    // 深度排序（画家算法）：把所有四类可绘制元素先收集，再按画布 y 升序绘制。
-    // 这样 y 大（靠近观察者）的元素会后画，自动覆盖 y 小的元素，避免跨类别重叠错乱。
+    // 分层深度排序（画家算法 + 层级）：
+    //   Layer 10 = 贴地层   → MapNode（地面贴图，永远在立体物体之下）
+    //   Layer 20 = 立体物体层 → Facility/Commercial/Beauty（建筑 / 地块 / 装饰精灵）
+    // 排序规则：先按 layer 升序（低层先画被高层盖住），同 layer 再按画布 y 升序
+    // （y 小先画被 y 大的盖 → 同层内近景压远景）。
     // ------------------------------------------------------------------
     struct DrawEntry {
+        int layer;
         float sortY;
         std::function<void()> paint;
     };
@@ -311,7 +315,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     QColor colors[5] = { Qt::gray, Qt::gray, Qt::cyan, Qt::cyan, Qt::cyan };
     const int denominator = 2000;
 
-    // 按节点绘制 → 收集
+    // 按节点绘制 → 收集（Layer 10: 贴地）
     for (size_t i = 0; i < m_mapNodes.size(); i++) {
         const MapNode& node = m_mapNodes[i];
         std::pair<float, float> canvasXY = rotateAround(static_cast<float>(node.x),
@@ -326,6 +330,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
                            || (node.special <= 0 && 0 < chunk && chunk < (int)nodeImages.size());
 
         drawEntries.push_back(DrawEntry{
+            10,  // Layer 10 = 贴地层
             y,
             [this, x, y, name, chunk, hasImage, node, chunkOffset, TRANSPARENT,
              colors, denominator,
@@ -359,7 +364,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         });
     }
 
-    // 绘制设施节点 → 收集
+    // 绘制设施节点 → 收集（Layer 20: 立体/地面地块）
     std::vector<FacilityInfo> facilityInfos = parseFacilityInfos(bytes);
     for (const FacilityInfo& item : facilityInfos) {
         std::pair<float, float> canvasXY = rotateAround(static_cast<float>(item.x),
@@ -372,6 +377,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         QString name = parseBig5Trim(QByteArray::fromRawData(item.name, sizeof(item.name)));
 
         drawEntries.push_back(DrawEntry{
+            20,  // Layer 20 = 立体物体层
             y,
             [this, x, y, tileChunk, name, TRANSPARENT,
              &tileImages, &tileInfos]() {
@@ -392,7 +398,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         });
     }
 
-    // 绘制上市企业节点 → 收集
+    // 绘制上市企业节点 → 收集（Layer 20: 地块 + 立体建筑精灵）
     std::vector<CommercialInfo> commercialInfos = parseCommercialInfos(bytes);
     for (const CommercialInfo& item : commercialInfos) {
         std::pair<float, float> canvasXY = rotateAround(static_cast<float>(item.x),
@@ -407,6 +413,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         QString name = parseBig5Trim(QByteArray::fromRawData(item.name, sizeof(item.name)));
 
         drawEntries.push_back(DrawEntry{
+            20,  // Layer 20 = 立体物体层
             y,
             [this, x, y, tileChunk, spriteOffset, face, name,
              TRANSPARENT, count, MAP_SPRITE_OFFSET, LARGE_TILE_CHUNK_OFFSET,
@@ -448,7 +455,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         });
     }
 
-    // 绘制美观节点 → 收集
+    // 绘制美观节点 → 收集（Layer 20: 立体装饰精灵）
     std::vector<BeautyInfo> beautyInfos = parseBeautyInfos(bytes);
     for (const BeautyInfo& item : beautyInfos) {
         std::pair<float, float> canvasXY = rotateAround(static_cast<float>(item.x),
@@ -461,6 +468,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         QString name = parseBig5Trim(QByteArray::fromRawData(item.name, sizeof(item.name)));
 
         drawEntries.push_back(DrawEntry{
+            20,  // Layer 20 = 立体物体层
             y,
             [this, x, y, spriteOffset, face, name,
              TRANSPARENT, count, MAP_SPRITE_OFFSET, resourceModel]() {
@@ -491,9 +499,10 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         });
     }
 
-    // 按画布 y 升序排序（小 y 先画被遮挡，大 y 后画覆盖上层 → 画家算法）
+    // 先 layer（低→高）、再画布 y（小→大）升序排序 → 画家算法
     std::sort(drawEntries.begin(), drawEntries.end(),
               [](const DrawEntry& a, const DrawEntry& b) {
+                  if (a.layer != b.layer) return a.layer < b.layer;
                   return a.sortY < b.sortY;
               });
 
