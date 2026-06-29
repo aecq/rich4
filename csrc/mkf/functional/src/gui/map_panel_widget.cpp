@@ -69,7 +69,13 @@ void MapPanelWidget::loadMap(const QModelIndex& mapIndex, ResourceModel* resourc
     populateScene(mapIndex, resourceModel);
 
     // 首次加载 MAP：重置视图以适配场景，并保证 pivot 对齐到视口中心
-    m_mapView->fitInView(m_mapScene->sceneRect(), Qt::KeepAspectRatio);
+    // m_mapView->fitInView(m_mapScene->sceneRect(), Qt::KeepAspectRatio);
+    // 适配真实内容（不加 padding 的版本，初始视图更紧凑）
+    QRectF contentRect = m_mapScene->itemsBoundingRect();
+    if (contentRect.isNull()) {
+        contentRect = QRectF(0, 0, kSceneSize, kSceneSize);
+    }
+    m_mapView->fitInView(contentRect, Qt::KeepAspectRatio);
     m_mapView->centerOn(m_pivotX, m_pivotY);
 
     QString text = buildMapText(mapIndex, resourceModel);
@@ -398,6 +404,19 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
         dot->setBrush(Qt::green);
     }
+
+    // 根据实际绘制内容调整 sceneRect，确保放大后可滚动到所有边缘
+    QRectF contentRect = m_mapScene->itemsBoundingRect();
+    if (contentRect.isNull()) {
+        // 场景为空（m_mapNodes 空）时兜底，保证 sceneRect 不为空
+        contentRect = QRectF(0, 0, kSceneSize, kSceneSize);
+    }
+    // 四周加 padding（= 放大后的余量；缩得越大，padding 相对越小但绝对滚动范围存在）
+    const qreal padding = 200.0;
+    contentRect.adjust(-padding, -padding, padding, padding);
+    // 确保旋转枢轴在 sceneRect 内（否则后续 centerOn 会被 clamp 到边界导致视角不对）
+    contentRect = contentRect.united(QRectF(m_pivotX, m_pivotY, 1.0, 1.0));
+    m_mapScene->setSceneRect(contentRect);
 }
 
 // ===========================================================================
