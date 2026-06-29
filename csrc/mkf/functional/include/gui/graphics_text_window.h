@@ -1,10 +1,7 @@
 #pragma once
 
-#include "gui/map_graphics_view.h"
-#include "core/types/map.h"
+#include "gui/map_panel_widget.h"
 #include "core/utils/resource_model.h"
-#include <QGraphicsView>
-#include <QGraphicsScene>
 #include <QImage>
 #include <QListWidget>
 #include <QModelIndex>
@@ -24,25 +21,21 @@ private:
     void update(const QModelIndex &index);
     QString paletteHTML(const QModelIndex &index, ResourceModel* resourceModel);
 
-    void displayMap(const QModelIndex& index, ResourceModel* resourceModel);
-    void displayMapText(const QModelIndex& index, ResourceModel* resourceModel);
     void displayRawImage(const QModelIndex& index, ResourceModel* resourceModel, bool isGrayscale = false);
     void displayImages();
 
 public slots:
     void onTreeRowChanged(const QModelIndex &index);
     void onGalleryContextMenu(const QPoint& pos);
-    void onMousePositionChanged(int x, int y);
+    void onMapTextReady(const QString& text);
 
 private:
     MainWindow* m_mainWindow;
     std::vector<QImage> m_images;
-    std::vector<MapNode> m_mapNodes;
 
     QTextEdit* textEdit;
     QListWidget* gallery;
-    MapGraphicsView* mapView;
-    QGraphicsScene* mapScene;
+    MapPanelWidget* mapPanel;
 
 signals:
     void statusMessage(const QString& message);
