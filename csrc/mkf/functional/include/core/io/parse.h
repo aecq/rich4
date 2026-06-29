@@ -453,6 +453,38 @@ static inline std::vector<MapNode> parseMapNodes(const QByteArray& bytes, int of
     return nodes;
 }
 
+static inline std::vector<LandNode> parseLandNodes(const QByteArray& bytes, int offset=0) {
+    MapDataHeader header = readDataAtOffset<MapDataHeader>(bytes, offset);
+    int n = header.land_node_count;
+    std::vector<LandNode> nodes(n);
+    memcpy(nodes.data(), bytes.constData() + offset + header.land_node_array_offset, n * sizeof(LandNode));
+    return nodes;
+}
+
+static inline std::vector<FacilityNode> parseFacilityNodes(const QByteArray& bytes, int offset=0) {
+    MapDataHeader header = readDataAtOffset<MapDataHeader>(bytes, offset);
+    int n = header.facility_node_count;
+    std::vector<FacilityNode> nodes(n);
+    memcpy(nodes.data(), bytes.constData() + offset + header.facility_node_array_offset, n * sizeof(FacilityNode));
+    return nodes;
+}
+
+static inline std::vector<CommercialNode> parseCommercialNodes(const QByteArray& bytes, int offset=0) {
+    MapDataHeader header = readDataAtOffset<MapDataHeader>(bytes, offset);
+    int n = header.commercial_node_count;
+    std::vector<CommercialNode> nodes(n);
+    memcpy(nodes.data(), bytes.constData() + offset + header.commercial_node_array_offset, n * sizeof(CommercialNode));
+    return nodes;
+}
+
+static inline std::vector<BeautyNode> parseBeautyNodes(const QByteArray& bytes, int offset=0) {
+    MapDataHeader header = readDataAtOffset<MapDataHeader>(bytes, offset);
+    int n = header.beauty_node_count;
+    std::vector<BeautyNode> nodes(n);
+    memcpy(nodes.data(), bytes.constData() + offset + header.beauty_node_array_offset, n * sizeof(BeautyNode));
+    return nodes;
+}
+
 // ====================
 //  parseWXH(string, width, height, errorMsg): 从形如 .wxh 的 QString 字符串中解析正整数 w 和 h
 // ====================
