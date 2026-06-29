@@ -37,6 +37,7 @@ void MapPanelWidget::setupUI() {
     // 2. 场景 + 视图
     m_mapView = new MapGraphicsView(this);
     m_mapScene = new QGraphicsScene(m_mapView);
+    m_mapScene->setSceneRect(0, 0, kSceneSize, kSceneSize);
     m_mapView->setScene(m_mapScene);
 
     m_mapView->setDragMode(QGraphicsView::ScrollHandDrag);      // 拖拽平移
@@ -66,6 +67,10 @@ void MapPanelWidget::loadMap(const QModelIndex& mapIndex, ResourceModel* resourc
     }
 
     populateScene(mapIndex, resourceModel);
+
+    // 首次加载 MAP：重置视图以适配场景，并保证 pivot 对齐到视口中心
+    m_mapView->fitInView(m_mapScene->sceneRect(), Qt::KeepAspectRatio);
+    m_mapView->centerOn(m_pivotX, m_pivotY);
 
     QString text = buildMapText(mapIndex, resourceModel);
     emit mapTextReady(text);
@@ -221,10 +226,6 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     m_mapScene->clear();
 
     if (m_mapNodes.empty()) return;
-
-    // 场景大小 + 初始缩放
-    float factor = 1.0f * m_mapView->width() / kSceneSize;
-    m_mapView->scale(factor, factor);
 
     // 按节点绘制
     for (size_t i = 0; i < m_mapNodes.size(); i++) {
@@ -397,11 +398,6 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
         dot->setBrush(Qt::green);
     }
-
-    m_mapScene->setSceneRect(0, 0, kSceneSize, kSceneSize);
-    m_mapView->fitInView(m_mapScene->sceneRect(), Qt::KeepAspectRatio);
-    // 保证"容器中心的 Scene 点 = pivot"这一约束在初始显示时成立（North-Top-Left 旋转后仍对齐）
-    m_mapView->centerOn(m_pivotX, m_pivotY);
 }
 
 // ===========================================================================
