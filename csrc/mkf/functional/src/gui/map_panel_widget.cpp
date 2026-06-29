@@ -131,6 +131,11 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     std::vector<QImage> nodeImages = parseImages(resourceModel->getResource(3 * count));
     std::vector<GraphInfo> nodeInfos  = parseGraphInfos(resourceModel->getResource(3 * count));
     const QColor TRANSPARENT(Qt::black);
+    // 地块
+    const int TILE_OFFSET = 2;
+    const int LARGE_TILE_CHUNK_OFFSET = 2;
+    std::vector<GraphInfo> tileInfos = parseGraphInfos(resourceModel->getResource(3 * count + TILE_OFFSET));
+    std::vector<QImage> tileImages = parseImages(resourceModel->getResource(3 * count + TILE_OFFSET));
 
     m_mapScene->clear();
 
@@ -198,6 +203,14 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     for (const FacilityNode& node : facilityNodes) {
         float x = node.x;
         float y = node.y;
+        // 地块
+        const int tileChunk = LARGE_TILE_CHUNK_OFFSET + (node.face & 1);
+        QPixmap tilePixmap = QPixmap::fromImage(tileImages[tileChunk]);
+        QBitmap tileMask = tilePixmap.createMaskFromColor(TRANSPARENT);
+        tilePixmap.setMask(tileMask);
+        QGraphicsPixmapItem* tilePixmapItem = m_mapScene->addPixmap(tilePixmap);
+        tilePixmapItem->setPos(x - tileInfos[tileChunk].x, y - tileInfos[tileChunk].y);
+        // 名称
         QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
         if (!name.isEmpty()) {
             QGraphicsTextItem* textItem = m_mapScene->addText(name);
@@ -215,6 +228,14 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     for (const CommercialNode& node : commercialNodes) {
         float x = node.x;
         float y = node.y;
+        // 地块
+        const int tileChunk = LARGE_TILE_CHUNK_OFFSET + (node.face & 1);
+        QPixmap tilePixmap = QPixmap::fromImage(tileImages[tileChunk]);
+        QBitmap tileMask = tilePixmap.createMaskFromColor(TRANSPARENT);
+        tilePixmap.setMask(tileMask);
+        QGraphicsPixmapItem* tilePixmapItem = m_mapScene->addPixmap(tilePixmap);
+        tilePixmapItem->setPos(x - tileInfos[tileChunk].x, y - tileInfos[tileChunk].y);
+        // 名称
         QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
         if (!name.isEmpty()) {
             QGraphicsTextItem* textItem = m_mapScene->addText(name);
