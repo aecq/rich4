@@ -293,8 +293,9 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
 
     // ------------------------------------------------------------------
     // 分层深度排序（画家算法 + 层级）：
+    //   Layer  5 = 地块
     //   Layer 10 = 贴地层   → MapNode（地面贴图，永远在立体物体之下）
-    //   Layer 20 = 立体物体层 → Facility/Commercial/Beauty（建筑 / 地块 / 装饰精灵）
+    //   Layer 20 = 立体物体层 → Facility/Commercial/Beauty（建筑 / 装饰精灵）
     // 排序规则：先按 layer 升序（低层先画被高层盖住），同 layer 再按画布 y 升序
     // （y 小先画被 y 大的盖 → 同层内近景压远景）。
     // ------------------------------------------------------------------
@@ -364,7 +365,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         });
     }
 
-    // 绘制设施节点 → 收集（Layer 20: 立体/地面地块）
+    // 绘制设施节点 → 收集（Layer 20: 立体）
     std::vector<FacilityInfo> facilityInfos = parseFacilityInfos(bytes);
     for (const FacilityInfo& item : facilityInfos) {
         std::pair<float, float> canvasXY = rotateAround(static_cast<float>(item.x),
@@ -377,15 +378,21 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         QString name = parseBig5Trim(QByteArray::fromRawData(item.name, sizeof(item.name)));
 
         drawEntries.push_back(DrawEntry{
-            20,  // Layer 20 = 立体物体层
+            5,
             y,
-            [this, x, y, tileChunk, name, TRANSPARENT,
-             &tileImages, &tileInfos]() {
+            [this, x, y, tileChunk, TRANSPARENT, &tileImages, &tileInfos]() {
                 QPixmap tilePixmap = QPixmap::fromImage(tileImages[tileChunk]);
                 QBitmap tileMask = tilePixmap.createMaskFromColor(TRANSPARENT);
                 tilePixmap.setMask(tileMask);
                 QGraphicsPixmapItem* tilePixmapItem = m_mapScene->addPixmap(tilePixmap);
                 tilePixmapItem->setPos(x - tileInfos[tileChunk].x, y - tileInfos[tileChunk].y);
+            }
+        });
+
+        drawEntries.push_back(DrawEntry{
+            20,  // Layer 20 = 立体物体层
+            y,
+            [this, x, y, name]() {
                 if (!name.isEmpty()) {
                     QGraphicsTextItem* textItem = m_mapScene->addText(name);
                     textItem->setPos(x - textItem->boundingRect().width() / 2,
@@ -398,7 +405,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         });
     }
 
-    // 绘制上市企业节点 → 收集（Layer 20: 地块 + 立体建筑精灵）
+    // 绘制上市企业节点 → 收集（Layer 20: 立体建筑精灵）
     std::vector<CommercialInfo> commercialInfos = parseCommercialInfos(bytes);
     for (const CommercialInfo& item : commercialInfos) {
         std::pair<float, float> canvasXY = rotateAround(static_cast<float>(item.x),
@@ -413,18 +420,22 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         QString name = parseBig5Trim(QByteArray::fromRawData(item.name, sizeof(item.name)));
 
         drawEntries.push_back(DrawEntry{
-            20,  // Layer 20 = 立体物体层
+            5,
             y,
-            [this, x, y, tileChunk, spriteOffset, face, name,
-             TRANSPARENT, count, MAP_SPRITE_OFFSET, LARGE_TILE_CHUNK_OFFSET,
-             resourceModel,
-             &tileImages, &tileInfos]() {
+            [this, x, y, tileChunk, spriteOffset, TRANSPARENT, &tileImages, &tileInfos]() {
                 // 地块
                 QPixmap tilePixmap = QPixmap::fromImage(tileImages[tileChunk]);
                 QBitmap tileMask = tilePixmap.createMaskFromColor(TRANSPARENT);
                 tilePixmap.setMask(tileMask);
                 QGraphicsPixmapItem* tilePixmapItem = m_mapScene->addPixmap(tilePixmap);
                 tilePixmapItem->setPos(x - tileInfos[tileChunk].x, y - tileInfos[tileChunk].y);
+            }
+        });
+
+        drawEntries.push_back(DrawEntry{
+            20,  // Layer 20 = 立体物体层
+            y,
+            [this, x, y, spriteOffset, face, name, TRANSPARENT, count, MAP_SPRITE_OFFSET, resourceModel]() {
                 // Sprite
                 if (spriteOffset <= 0) return;
                 const int chunk = offsetChunk8(face, 0, m_northDirection);
