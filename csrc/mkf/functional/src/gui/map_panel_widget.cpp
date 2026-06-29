@@ -193,6 +193,54 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         }
     }
 
+    // 绘制设施节点
+    std::vector<FacilityNode> facilityNodes = parseFacilityNodes(bytes);
+    for (const FacilityNode& node : facilityNodes) {
+        float x = node.x;
+        float y = node.y;
+        QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
+        if (!name.isEmpty()) {
+            QGraphicsTextItem* textItem = m_mapScene->addText(name);
+            textItem->setPos(x - textItem->boundingRect().width() / 2,
+                             y + textItem->boundingRect().height() / 2);
+            textItem->setDefaultTextColor(Qt::red);
+        }
+        QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
+        dot->setBrush(Qt::gray);
+    }
+
+    // 绘制上市企业节点
+    std::vector<CommercialNode> commercialNodes = parseCommercialNodes(bytes);
+    for (const CommercialNode& node : commercialNodes) {
+        float x = node.x;
+        float y = node.y;
+        QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
+        if (!name.isEmpty()) {
+            QGraphicsTextItem* textItem = m_mapScene->addText(name);
+            textItem->setPos(x - textItem->boundingRect().width() / 2,
+                             y + textItem->boundingRect().height() / 2);
+            textItem->setDefaultTextColor(Qt::blue);
+        }
+        QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
+        dot->setBrush(Qt::gray);
+    }
+
+    // 绘制美观节点
+    std::vector<BeautyNode> beautyNodes = parseBeautyNodes(bytes);
+    for (const BeautyNode& node : beautyNodes) {
+        float x = node.x;
+        float y = node.y;
+        QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
+        if (!name.isEmpty()) {
+            QGraphicsTextItem* textItem = m_mapScene->addText(name);
+            textItem->setPos(x - textItem->boundingRect().width() / 2,
+                             y + textItem->boundingRect().height() / 2);
+            textItem->setDefaultTextColor(Qt::green);
+        }
+        QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
+        dot->setBrush(Qt::green);
+    }
+
     m_mapScene->setSceneRect(0, 0, sceneSize, sceneSize);
     m_mapView->fitInView(m_mapScene->sceneRect(), Qt::KeepAspectRatio);
 }
