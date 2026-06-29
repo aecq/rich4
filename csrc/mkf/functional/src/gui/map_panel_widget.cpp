@@ -7,6 +7,7 @@
 #include <QPainter>
 #include <QBitmap>
 #include <QPixmap>
+#include <QCursor>
 #include <QVBoxLayout>
 #include <QtMath>
 
@@ -194,13 +195,64 @@ void MapPanelWidget::onMousePositionChanged(int x, int y) {
 }
 
 void MapPanelWidget::onNorthRotateBy(int delta) {
-    // 方向是环形的 0..7，用正余数做循环：0-1=7，7+1=0
-    // 若想要"到边界就停止"的 clamp 语义，直接改为：
-    //   setNorthDirection(m_northDirection + delta);
+    // ================================================================
+    // 阶段 1：旋转前，记录"视觉保持不动"的点。
+    //   - 鼠标当前在 GraphicsView 视口内 → 取鼠标像素点
+    //   - 否则                         → 取视口中心（兼容旧行为）
+    // 把这个像素映射到 Scene，再反变换到地理坐标 G_geo：
+    //   G_geo 才是"真实地图上那个点"，旋转前后应当仍落在同一个视口像素上。
+    // ================================================================
+    QWidget* vp = m_mapView->viewport();
+    const QRect vpRect = vp->rect();
+    const QPoint vpCenter = vpRect.center();
+
+    QPoint Vp;
+    const QPoint localCursor = vp->mapFromGlobal(QCursor::pos());
+    if (vpRect.contains(localCursor)) {
+        Vp = localCursor;
+    } else {
+        Vp = vpCenter;
+    }
+
+    const QPointF spPrev = m_mapView->mapToScene(Vp);
+    const int T_old = m_northDirection;
+    // 反变换：地理坐标 = rotateAround(画布坐标, 1 - T)
+    const std::pair<float, float> G_geo =
+        rotateAround(static_cast<float>(spPrev.x()),
+                     static_cast<float>(spPrev.y()),
+                     1 - T_old);
+
+    // ================================================================
+    // 阶段 2：执行 TopLeftIndex 切换（环形 0..7）。
+    // setNorthDirection 内部会触发 populateScene，
+    // 所有节点按新朝向重新 setPos + 换 chunk，（如有）sceneRect 也会更新。
+    // ================================================================
     const int S = kTopLeftIndexMax - kTopLeftIndexMin + 1;  // = 8
-    int next = m_northDirection + delta;
+    int next = T_old + delta;
     next = ((next % S) + S) % S;
     setNorthDirection(next);
+
+    // ================================================================
+    // 阶段 3：旋转后，把 G_geo 在新朝向下的画布坐标"搬回"视口像素 Vp。
+    //   键盘旋转不改变 scale，所以只需按当前缩放比把"像素偏移"换算成 Scene 偏移，
+    //   让 view 的 center 对准 S_next 减去该偏移即可。
+    // ================================================================
+    const int T_new = m_northDirection;
+    const std::pair<float, float> S_next =
+        rotateAround(G_geo.first, G_geo.second, T_new);
+    const QPointF spNext(static_cast<qreal>(S_next.first),
+                         static_cast<qreal>(S_next.second));
+
+    // 缩放比：Scene 1 单位 = View 多少像素。奇异时（极罕见）兜底 1.0。
+    const QTransform M = m_mapView->transform();
+    const qreal sx = (qFuzzyIsNull(M.m11())) ? 1.0 : 1.0 / M.m11();
+    const qreal sy = (qFuzzyIsNull(M.m22())) ? 1.0 : 1.0 / M.m22();
+
+    const QPoint offsetPx = Vp - vpCenter;
+    const QPointF targetCenter(spNext.x() - offsetPx.x() * sx,
+                               spNext.y() - offsetPx.y() * sy);
+
+    m_mapView->centerOn(targetCenter);
 }
 
 // ===========================================================================
