@@ -128,8 +128,8 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
             break;
         }
     }
-    std::vector<QImage> images = parseImages(resourceModel->getResource(3 * count));
-    std::vector<GraphInfo> infos  = parseGraphInfos(resourceModel->getResource(3 * count));
+    std::vector<QImage> nodeImages = parseImages(resourceModel->getResource(3 * count));
+    std::vector<GraphInfo> nodeInfos  = parseGraphInfos(resourceModel->getResource(3 * count));
 
     m_mapScene->clear();
 
@@ -153,15 +153,14 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         QString type = resourceModel->getType(index.row());
         int chunkOffset = type.mid(3, type.length() - 3).toInt();
         int chunk = node.chunk + chunkOffset;
-
-        const bool hasImage = (node.special > 0 && chunk < (int)images.size() && !images[chunk].isNull())
-                           || (node.special <= 0 && 0 < chunk && chunk < (int)images.size());
+        const bool hasImage = (node.special > 0 && chunk < (int)nodeImages.size() && !nodeImages[chunk].isNull())
+                           || (node.special <= 0 && 0 < chunk && chunk < (int)nodeImages.size());
         if (hasImage) {
-            QPixmap pixmap = QPixmap::fromImage(images[chunk]);
+            QPixmap pixmap = QPixmap::fromImage(nodeImages[chunk]);
             QBitmap mask = pixmap.createMaskFromColor(Qt::black);
             pixmap.setMask(mask);
             QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
-            pixmapItem->setPos(x - infos[chunk].x, y - infos[chunk].y);
+            pixmapItem->setPos(x - nodeInfos[chunk].x, y - nodeInfos[chunk].y);
         }
 
         // 颜色映射：type / 2000 取索引
@@ -172,7 +171,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         if (!name.isEmpty()) {
             QGraphicsTextItem* textItem = m_mapScene->addText(name);
             textItem->setPos(x - textItem->boundingRect().width() / 2,
-                             y + ((node.special > 0) ? infos[chunk].y : 0));
+                             y + ((node.special > 0) ? nodeInfos[chunk].y : 0));
             textItem->setDefaultTextColor(colors[node.type / denominator]);
         }
 
@@ -181,7 +180,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
             QString typeStr = QString::number(node.type);
             QGraphicsTextItem* typeItem = m_mapScene->addText(typeStr);
             typeItem->setPos(x - typeItem->boundingRect().width() / 2,
-                             y - ((node.special > 0) ? infos[chunk].y : 0)
+                             y - ((node.special > 0) ? nodeInfos[chunk].y : 0)
                                - typeItem->boundingRect().height());
             typeItem->setDefaultTextColor(colors[node.type / denominator]);
         }
