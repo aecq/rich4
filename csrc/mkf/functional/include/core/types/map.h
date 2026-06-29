@@ -60,7 +60,7 @@ struct CommercialNode {  // 大小: 52 字节 (0x34)
     int8_t unknown0x18;          // [0x18] 未知字段
     int8_t unknown0x19;          // [0x19] 未知字段
     int8_t unknown0x1A;          // [0x1A] 未知字段
-    int8_t unknown0x1B;          // [0x1B] 未知字段
+    int8_t face;                 // [0x1B] 朝向
     int32_t unknown0x1C;         // [0x1C] 未知字段
     int16_t sprite;              // [0x20] 图像资源偏移
     int16_t unknown0x22;         // [0x22] 未知字段
