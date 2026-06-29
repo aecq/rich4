@@ -131,6 +131,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     std::vector<QImage> nodeImages = parseImages(resourceModel->getResource(3 * count));
     std::vector<GraphInfo> nodeInfos  = parseGraphInfos(resourceModel->getResource(3 * count));
     const QColor TRANSPARENT(Qt::black);
+    const int MAP_SPRITE_OFFSET = 14;
     // 地块
     const int TILE_OFFSET = 2;
     const int LARGE_TILE_CHUNK_OFFSET = 2;
@@ -235,6 +236,23 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         tilePixmap.setMask(tileMask);
         QGraphicsPixmapItem* tilePixmapItem = m_mapScene->addPixmap(tilePixmap);
         tilePixmapItem->setPos(x - tileInfos[tileChunk].x, y - tileInfos[tileChunk].y);
+        // 图片
+        const int16_t spriteOffset = node.sprite;
+        if (spriteOffset <= 0) continue;
+        const int chunk = node.face;
+        const int spriteResourceIndex = 3 * count + MAP_SPRITE_OFFSET + spriteOffset;
+        if (spriteResourceIndex <= 0 || spriteResourceIndex >= resourceModel->n()) continue;
+        const QString type = resourceModel->getType(spriteResourceIndex);
+        if (!type.startsWith("SPR") && !type.startsWith("SMP")) continue;
+        std::vector<GraphInfo> infos = parseGraphInfos(resourceModel->getResource(spriteResourceIndex));
+        if (chunk < 0 || chunk >= (int)infos.size()) continue;
+        std::vector<QImage> images = parseImages(resourceModel->getResource(spriteResourceIndex));
+        if (images[chunk].isNull()) continue;
+        QPixmap pixmap = QPixmap::fromImage(images[chunk]);
+        QBitmap mask = pixmap.createMaskFromColor(TRANSPARENT);
+        pixmap.setMask(mask);
+        QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
+        pixmapItem->setPos(x - infos[chunk].x, y - infos[chunk].y);
         // 名称
         QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
         if (!name.isEmpty()) {
@@ -253,6 +271,24 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     for (const BeautyNode& node : beautyNodes) {
         float x = node.x;
         float y = node.y;
+        // 图片
+        const int16_t spriteOffset = node.sprite;
+        if (spriteOffset <= 0) continue;
+        const int chunk = node.face;
+        const int spriteResourceIndex = 3 * count + MAP_SPRITE_OFFSET + spriteOffset;
+        if (spriteResourceIndex <= 0 || spriteResourceIndex >= resourceModel->n()) continue;
+        const QString type = resourceModel->getType(spriteResourceIndex);
+        if (!type.startsWith("SPR") && !type.startsWith("SMP")) continue;
+        std::vector<GraphInfo> infos = parseGraphInfos(resourceModel->getResource(spriteResourceIndex));
+        if (chunk < 0 || chunk >= (int)infos.size()) continue;
+        std::vector<QImage> images = parseImages(resourceModel->getResource(spriteResourceIndex));
+        if (images[chunk].isNull()) continue;
+        QPixmap pixmap = QPixmap::fromImage(images[chunk]);
+        QBitmap mask = pixmap.createMaskFromColor(TRANSPARENT);
+        pixmap.setMask(mask);
+        QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
+        pixmapItem->setPos(x - infos[chunk].x, y - infos[chunk].y);
+        // 名称
         QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
         if (!name.isEmpty()) {
             QGraphicsTextItem* textItem = m_mapScene->addText(name);
