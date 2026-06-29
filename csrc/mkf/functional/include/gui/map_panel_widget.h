@@ -80,7 +80,7 @@ private:
     // --- 通用坐标旋转辅助函数 ---
     // 把"地理坐标 (gx, gy)"按当前 TopLeftIndex 绕枢轴 (m_pivotX, m_pivotY) 旋转到"画布坐标"。
     // 约定：X+ 为初始极向量方向，逆时针为正；TopLeftIndex 每 +1 角度 +kAngleStepDeg。
-    // 传负的 topLeftIndex 可实现反变换（画布坐标 → 地理坐标）。
+    // 传 1 - topLeftIndex 可实现反变换（画布坐标 → 地理坐标）。
     std::pair<float, float> rotateAround(float gx, float gy, int topLeftIndex) const;
 
     // --- 通用 Chunk 索引偏移辅助函数 ---
