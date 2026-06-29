@@ -185,7 +185,11 @@ void MapPanelWidget::setLayerVisible(int nodeTypeMin, int nodeTypeMax, bool visi
 // 鼠标位置：转发到状态栏
 // ---------------------------------------------------------------------------
 void MapPanelWidget::onMousePositionChanged(int x, int y) {
-    QString text = QString("Map Scene XY: %1, %2").arg(x).arg(y);
+    std::pair<float, float> mapXY = rotateAround(static_cast<float>(x),
+                                                 static_cast<float>(y),
+                                                 1 - m_northDirection);
+    QString text = QString("Canvas XY (%1, %2) Map XY (%3, %4)").arg(x).arg(y)
+                                .arg(int(mapXY.first)).arg(int(mapXY.second));
     emit statusMessage(text);
 }
 
