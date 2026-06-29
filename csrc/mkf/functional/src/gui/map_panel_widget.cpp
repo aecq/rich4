@@ -8,10 +8,13 @@
 #include <QBitmap>
 #include <QPixmap>
 #include <QVBoxLayout>
+#include <QtMath>
 
 MapPanelWidget::MapPanelWidget(QWidget* parent)
     : QWidget(parent)
-    , m_northDirection(0)
+    , m_northDirection(kNorthTopLeftIndex)
+    , m_pivotX(static_cast<float>(kSceneSize) * 0.5f)
+    , m_pivotY(static_cast<float>(kSceneSize) * 0.5f)
     , m_mapView(nullptr)
     , m_mapScene(nullptr)
 {
@@ -79,15 +82,69 @@ void MapPanelWidget::clear() {
 // 预留接口：North 方向（占位，后续 Ground 旋转实现时再充实）
 // ---------------------------------------------------------------------------
 void MapPanelWidget::setNorthDirection(int topLeftIndex) {
-    // clamp 到 0..7
-    if (topLeftIndex < 0) topLeftIndex = 0;
-    if (topLeftIndex > 7) topLeftIndex = 7;
+    // clamp 到 kTopLeftIndexMin..kTopLeftIndexMax
+    if (topLeftIndex < kTopLeftIndexMin) topLeftIndex = kTopLeftIndexMin;
+    if (topLeftIndex > kTopLeftIndexMax) topLeftIndex = kTopLeftIndexMax;
     m_northDirection = topLeftIndex;
     // TODO: Ground 旋转重新计算 chunk 索引 + 场景旋转矩阵
 }
 
 int MapPanelWidget::northDirection() const {
     return m_northDirection;
+}
+
+// ---------------------------------------------------------------------------
+// 旋转枢轴 getter / setter
+// ---------------------------------------------------------------------------
+void MapPanelWidget::setPivot(float pivotX, float pivotY) {
+    m_pivotX = pivotX;
+    m_pivotY = pivotY;
+}
+
+float MapPanelWidget::pivotX() const {
+    return m_pivotX;
+}
+
+float MapPanelWidget::pivotY() const {
+    return m_pivotY;
+}
+
+// ---------------------------------------------------------------------------
+// 通用旋转 / Chunk 偏移辅助函数
+// ---------------------------------------------------------------------------
+std::pair<float, float> MapPanelWidget::rotateAround(float gx, float gy, int topLeftIndex) const {
+    const qreal theta = qDegreesToRadians(static_cast<qreal>(topLeftIndex) * kAngleStepDeg - 22.5);
+    const qreal dx = static_cast<qreal>(gx) - m_pivotX;
+    const qreal dy = static_cast<qreal>(gy) - m_pivotY;
+    const qreal cosT = qCos(theta);
+    const qreal sinT = qSin(theta);
+    const float nx = static_cast<float>(m_pivotX + dx * cosT - dy * sinT);
+    const float ny = static_cast<float>(m_pivotY + dx * sinT + dy * cosT);
+    return {nx, ny};
+}
+
+int MapPanelWidget::offsetChunkN(int absChunk, int base, int S, int i) const {
+    // 用户定义：k' = (k + i) % S，返回 base + k'。
+    //   S        = 该资源的 chunk 总数（当前使用 1 / 2 / 8；公式本身不限制 S）
+    //   k        = absChunk - base  ∈ [0, S-1]
+    //   结果 k'  = 非负的正余数 [0, S-1]
+    Q_ASSERT(S > 0);
+    const int k = absChunk - base;
+    int kNew = (k + i) % S;
+    // C++11 起 % 对负数是向零取整（-3 % 8 = -3），这里转成正余数。
+    if (kNew < 0) {
+        kNew += S;
+    }
+    // 约定校验：验证后如果方向反了，把 (k + i) 改成 (k - i) 即可（两处一起改）。
+    return base + kNew;
+}
+
+int MapPanelWidget::offsetChunk8(int absChunk, int base, int i) const {
+    return offsetChunkN(absChunk, base, 8, i);
+}
+
+int MapPanelWidget::offsetChunk2(int absChunk, int base, int i) const {
+    return offsetChunkN(absChunk, base, 2, i);
 }
 
 // ---------------------------------------------------------------------------
