@@ -200,16 +200,19 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     if (m_mapNodes.empty()) return;
 
     // 场景大小 + 初始缩放
-    const int sceneSize = 2300;
-    float factor = 1.0f * m_mapView->width() / sceneSize;
+    float factor = 1.0f * m_mapView->width() / kSceneSize;
     m_mapView->scale(factor, factor);
 
     // 按节点绘制
     for (size_t i = 0; i < m_mapNodes.size(); i++) {
         const MapNode& node = m_mapNodes[i];
 
-        float x = node.x;
-        float y = node.y;
+        // 地理坐标 (node.x, node.y) → 画布坐标（绕 pivot 按当前 North 旋转）
+        std::pair<float, float> canvasXY = rotateAround(static_cast<float>(node.x),
+                                                        static_cast<float>(node.y),
+                                                        m_northDirection);
+        float x = canvasXY.first;
+        float y = canvasXY.second;
 
         QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
 
@@ -259,10 +262,15 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     // 绘制设施节点
     std::vector<FacilityInfo> facilityInfos = parseFacilityInfos(bytes);
     for (const FacilityInfo& item : facilityInfos) {
-        float x = item.x;
-        float y = item.y;
-        // 地块
-        const int tileChunk = LARGE_TILE_CHUNK_OFFSET + (item.face & 1);
+        // 地理坐标 → 画布坐标
+        std::pair<float, float> canvasXY = rotateAround(static_cast<float>(item.x),
+                                                        static_cast<float>(item.y),
+                                                        m_northDirection);
+        float x = canvasXY.first;
+        float y = canvasXY.second;
+        // 地块（large tile，S=2；chunk[0] 在 tileImages 的下标 = LARGE_TILE_CHUNK_OFFSET）
+        const int absTileChunk = LARGE_TILE_CHUNK_OFFSET + (item.face & 1);
+        const int tileChunk = offsetChunk2(absTileChunk, LARGE_TILE_CHUNK_OFFSET, m_northDirection);
         QPixmap tilePixmap = QPixmap::fromImage(tileImages[tileChunk]);
         QBitmap tileMask = tilePixmap.createMaskFromColor(TRANSPARENT);
         tilePixmap.setMask(tileMask);
@@ -284,19 +292,24 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     // 绘制上市企业节点
     std::vector<CommercialInfo> commercialInfos = parseCommercialInfos(bytes);
     for (const CommercialInfo& item : commercialInfos) {
-        float x = item.x;
-        float y = item.y;
-        // 地块
-        const int tileChunk = LARGE_TILE_CHUNK_OFFSET + (item.face & 1);
+        // 地理坐标 → 画布坐标
+        std::pair<float, float> canvasXY = rotateAround(static_cast<float>(item.x),
+                                                        static_cast<float>(item.y),
+                                                        m_northDirection);
+        float x = canvasXY.first;
+        float y = canvasXY.second;
+        // 地块（large tile，S=2）
+        const int absTileChunk = LARGE_TILE_CHUNK_OFFSET + (item.face & 1);
+        const int tileChunk = offsetChunk2(absTileChunk, LARGE_TILE_CHUNK_OFFSET, m_northDirection);
         QPixmap tilePixmap = QPixmap::fromImage(tileImages[tileChunk]);
         QBitmap tileMask = tilePixmap.createMaskFromColor(TRANSPARENT);
         tilePixmap.setMask(tileMask);
         QGraphicsPixmapItem* tilePixmapItem = m_mapScene->addPixmap(tilePixmap);
         tilePixmapItem->setPos(x - tileInfos[tileChunk].x, y - tileInfos[tileChunk].y);
-        // 图片
+        // 图片（Sprite 8 方图；chunk[0] 在该 sprite 资源 images[] 的下标 = 0，即 base=0）
         const int16_t spriteOffset = item.sprite;
         if (spriteOffset <= 0) continue;
-        const int chunk = item.face;
+        const int chunk = offsetChunk8(item.face, 0, m_northDirection);
         const int spriteResourceIndex = 3 * count + MAP_SPRITE_OFFSET + spriteOffset;
         if (spriteResourceIndex <= 0 || spriteResourceIndex >= resourceModel->n()) continue;
         const QString type = resourceModel->getType(spriteResourceIndex);
@@ -326,12 +339,16 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     // 绘制美观节点
     std::vector<BeautyInfo> beautyInfos = parseBeautyInfos(bytes);
     for (const BeautyInfo& item : beautyInfos) {
-        float x = item.x;
-        float y = item.y;
-        // 图片
+        // 地理坐标 → 画布坐标
+        std::pair<float, float> canvasXY = rotateAround(static_cast<float>(item.x),
+                                                        static_cast<float>(item.y),
+                                                        m_northDirection);
+        float x = canvasXY.first;
+        float y = canvasXY.second;
+        // 图片（Sprite 8 方图；base=0）
         const int16_t spriteOffset = item.sprite;
         if (spriteOffset <= 0) continue;
-        const int chunk = item.face;
+        const int chunk = offsetChunk8(item.face, 0, m_northDirection);
         const int spriteResourceIndex = 3 * count + MAP_SPRITE_OFFSET + spriteOffset;
         if (spriteResourceIndex <= 0 || spriteResourceIndex >= resourceModel->n()) continue;
         const QString type = resourceModel->getType(spriteResourceIndex);
@@ -358,8 +375,10 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         dot->setBrush(Qt::green);
     }
 
-    m_mapScene->setSceneRect(0, 0, sceneSize, sceneSize);
+    m_mapScene->setSceneRect(0, 0, kSceneSize, kSceneSize);
     m_mapView->fitInView(m_mapScene->sceneRect(), Qt::KeepAspectRatio);
+    // 保证"容器中心的 Scene 点 = pivot"这一约束在初始显示时成立（North-Top-Left 旋转后仍对齐）
+    m_mapView->centerOn(m_pivotX, m_pivotY);
 }
 
 // ===========================================================================
