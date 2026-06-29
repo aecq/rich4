@@ -7,14 +7,14 @@
 struct MapDataHeader {  // 地图数据头部（前40字节）
     uint32_t map_node_count;             // [0x00] 地图节点个数
     uint32_t map_node_array_offset;      // [0x04] 地图节点数组相对于资源首的偏移
-    uint32_t land_node_count;            // [0x08] 普通土地节点个数
-    uint32_t land_node_array_offset;     // [0x0C] 普通土地节点数组相对于资源首的偏移
-    uint32_t facility_node_count;        // [0x10] 设施节点个数
-    uint32_t facility_node_array_offset; // [0x14] 设施节点数组相对于资源首的偏移
-    uint32_t commercial_node_count;      // [0x18] 上市企业节点个数
-    uint32_t commercial_node_array_offset; // [0x1C] 上市企业节点数组相对于资源首的偏移
-    uint32_t beauty_node_count;            // [0x20] 美观节点个数
-    uint32_t beauty_node_array_offset;     // [0x24] 美观节点数组相对于资源首的偏移
+    uint32_t land_info_count;            // [0x08] 普通土地个数
+    uint32_t land_info_array_offset;     // [0x0C] 普通土地数组相对于资源首的偏移
+    uint32_t facility_info_count;        // [0x10] 设施个数
+    uint32_t facility_info_array_offset; // [0x14] 设施数组相对于资源首的偏移
+    uint32_t commercial_info_count;      // [0x18] 上市企业个数
+    uint32_t commercial_info_array_offset; // [0x1C] 上市企业数组相对于资源首的偏移
+    uint32_t beauty_info_count;            // [0x20] 美观个数
+    uint32_t beauty_info_array_offset;     // [0x24] 美观数组相对于资源首的偏移
 };
 
 struct MapNode {  // 大小: 40 字节 (0x28)
@@ -28,7 +28,7 @@ struct MapNode {  // 大小: 40 字节 (0x28)
     int16_t fork;                // [0x28] 0 环路点不含分叉点; 非 0 分叉点和非环路点
 };
 
-struct LandNode {  // 大小: 52 字节 (0x34)
+struct LandInfo {  // 大小: 52 字节 (0x34)
     int16_t x;                   // [0x00] X 坐标
     int16_t y;                   // [0x02] Y 坐标
     char name[20];               // [0x04] 地名
@@ -40,7 +40,7 @@ struct LandNode {  // 大小: 52 字节 (0x34)
     char unknown0x2C[8];         // [0x2C] 未知字段
 };
 
-struct FacilityNode {  // 大小: 56 字节 (0x38)
+struct FacilityInfo {  // 大小: 56 字节 (0x38)
     int16_t x;                   // [0x00] X 坐标
     int16_t y;                   // [0x02] Y 坐标
     char name[20];               // [0x04] 名称
@@ -53,7 +53,7 @@ struct FacilityNode {  // 大小: 56 字节 (0x38)
     char unknown0x30[8];         // [0x30] 未知字段
 };
 
-struct CommercialNode {  // 大小: 52 字节 (0x34)
+struct CommercialInfo {  // 大小: 52 字节 (0x34)
     int16_t x;                   // [0x00] X 坐标
     int16_t y;                   // [0x02] Y 坐标
     char name[20];               // [0x04] 名称
@@ -68,7 +68,7 @@ struct CommercialNode {  // 大小: 52 字节 (0x34)
     char unknown0x28[12];        // [0x28] 未知字段
 };
 
-struct BeautyNode {  // 大小: 28 字节 (0x1C)
+struct BeautyInfo {  // 大小: 28 字节 (0x1C)
     int16_t x;                   // [0x00] X 坐标
     int16_t y;                   // [0x02] Y 坐标
     char name[20];               // [0x04] 名称

@@ -200,19 +200,19 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     }
 
     // 绘制设施节点
-    std::vector<FacilityNode> facilityNodes = parseFacilityNodes(bytes);
-    for (const FacilityNode& node : facilityNodes) {
-        float x = node.x;
-        float y = node.y;
+    std::vector<FacilityInfo> facilityInfos = parseFacilityInfos(bytes);
+    for (const FacilityInfo& item : facilityInfos) {
+        float x = item.x;
+        float y = item.y;
         // 地块
-        const int tileChunk = LARGE_TILE_CHUNK_OFFSET + (node.face & 1);
+        const int tileChunk = LARGE_TILE_CHUNK_OFFSET + (item.face & 1);
         QPixmap tilePixmap = QPixmap::fromImage(tileImages[tileChunk]);
         QBitmap tileMask = tilePixmap.createMaskFromColor(TRANSPARENT);
         tilePixmap.setMask(tileMask);
         QGraphicsPixmapItem* tilePixmapItem = m_mapScene->addPixmap(tilePixmap);
         tilePixmapItem->setPos(x - tileInfos[tileChunk].x, y - tileInfos[tileChunk].y);
         // 名称
-        QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
+        QString name = parseBig5Trim(QByteArray::fromRawData(item.name, sizeof(item.name)));
         if (!name.isEmpty()) {
             QGraphicsTextItem* textItem = m_mapScene->addText(name);
             textItem->setPos(x - textItem->boundingRect().width() / 2,
@@ -225,21 +225,21 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     }
 
     // 绘制上市企业节点
-    std::vector<CommercialNode> commercialNodes = parseCommercialNodes(bytes);
-    for (const CommercialNode& node : commercialNodes) {
-        float x = node.x;
-        float y = node.y;
+    std::vector<CommercialInfo> commercialInfos = parseCommercialInfos(bytes);
+    for (const CommercialInfo& item : commercialInfos) {
+        float x = item.x;
+        float y = item.y;
         // 地块
-        const int tileChunk = LARGE_TILE_CHUNK_OFFSET + (node.face & 1);
+        const int tileChunk = LARGE_TILE_CHUNK_OFFSET + (item.face & 1);
         QPixmap tilePixmap = QPixmap::fromImage(tileImages[tileChunk]);
         QBitmap tileMask = tilePixmap.createMaskFromColor(TRANSPARENT);
         tilePixmap.setMask(tileMask);
         QGraphicsPixmapItem* tilePixmapItem = m_mapScene->addPixmap(tilePixmap);
         tilePixmapItem->setPos(x - tileInfos[tileChunk].x, y - tileInfos[tileChunk].y);
         // 图片
-        const int16_t spriteOffset = node.sprite;
+        const int16_t spriteOffset = item.sprite;
         if (spriteOffset <= 0) continue;
-        const int chunk = node.face;
+        const int chunk = item.face;
         const int spriteResourceIndex = 3 * count + MAP_SPRITE_OFFSET + spriteOffset;
         if (spriteResourceIndex <= 0 || spriteResourceIndex >= resourceModel->n()) continue;
         const QString type = resourceModel->getType(spriteResourceIndex);
@@ -254,7 +254,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
         pixmapItem->setPos(x - infos[chunk].x, y - infos[chunk].y);
         // 名称
-        QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
+        QString name = parseBig5Trim(QByteArray::fromRawData(item.name, sizeof(item.name)));
         if (!name.isEmpty()) {
             QGraphicsTextItem* textItem = m_mapScene->addText(name);
             textItem->setPos(x - textItem->boundingRect().width() / 2,
@@ -267,14 +267,14 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     }
 
     // 绘制美观节点
-    std::vector<BeautyNode> beautyNodes = parseBeautyNodes(bytes);
-    for (const BeautyNode& node : beautyNodes) {
-        float x = node.x;
-        float y = node.y;
+    std::vector<BeautyInfo> beautyInfos = parseBeautyInfos(bytes);
+    for (const BeautyInfo& item : beautyInfos) {
+        float x = item.x;
+        float y = item.y;
         // 图片
-        const int16_t spriteOffset = node.sprite;
+        const int16_t spriteOffset = item.sprite;
         if (spriteOffset <= 0) continue;
-        const int chunk = node.face;
+        const int chunk = item.face;
         const int spriteResourceIndex = 3 * count + MAP_SPRITE_OFFSET + spriteOffset;
         if (spriteResourceIndex <= 0 || spriteResourceIndex >= resourceModel->n()) continue;
         const QString type = resourceModel->getType(spriteResourceIndex);
@@ -289,7 +289,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
         pixmapItem->setPos(x - infos[chunk].x, y - infos[chunk].y);
         // 名称
-        QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
+        QString name = parseBig5Trim(QByteArray::fromRawData(item.name, sizeof(item.name)));
         if (!name.isEmpty()) {
             QGraphicsTextItem* textItem = m_mapScene->addText(name);
             textItem->setPos(x - textItem->boundingRect().width() / 2,

@@ -453,36 +453,36 @@ static inline std::vector<MapNode> parseMapNodes(const QByteArray& bytes, int of
     return nodes;
 }
 
-static inline std::vector<LandNode> parseLandNodes(const QByteArray& bytes, int offset=0) {
+static inline std::vector<LandInfo> parseLandInfos(const QByteArray& bytes, int offset=0) {
     MapDataHeader header = readDataAtOffset<MapDataHeader>(bytes, offset);
-    int n = header.land_node_count;
-    std::vector<LandNode> nodes(n);
-    memcpy(nodes.data(), bytes.constData() + offset + header.land_node_array_offset, n * sizeof(LandNode));
-    return nodes;
+    int n = header.land_info_count;
+    std::vector<LandInfo> infos(n);
+    memcpy(infos.data(), bytes.constData() + offset + header.land_info_array_offset, n * sizeof(LandInfo));
+    return infos;
 }
 
-static inline std::vector<FacilityNode> parseFacilityNodes(const QByteArray& bytes, int offset=0) {
+static inline std::vector<FacilityInfo> parseFacilityInfos(const QByteArray& bytes, int offset=0) {
     MapDataHeader header = readDataAtOffset<MapDataHeader>(bytes, offset);
-    int n = header.facility_node_count;
-    std::vector<FacilityNode> nodes(n);
-    memcpy(nodes.data(), bytes.constData() + offset + header.facility_node_array_offset, n * sizeof(FacilityNode));
-    return nodes;
+    int n = header.facility_info_count;
+    std::vector<FacilityInfo> infos(n);
+    memcpy(infos.data(), bytes.constData() + offset + header.facility_info_array_offset, n * sizeof(FacilityInfo));
+    return infos;
 }
 
-static inline std::vector<CommercialNode> parseCommercialNodes(const QByteArray& bytes, int offset=0) {
+static inline std::vector<CommercialInfo> parseCommercialInfos(const QByteArray& bytes, int offset=0) {
     MapDataHeader header = readDataAtOffset<MapDataHeader>(bytes, offset);
-    int n = header.commercial_node_count;
-    std::vector<CommercialNode> nodes(n);
-    memcpy(nodes.data(), bytes.constData() + offset + header.commercial_node_array_offset, n * sizeof(CommercialNode));
-    return nodes;
+    int n = header.commercial_info_count;
+    std::vector<CommercialInfo> infos(n);
+    memcpy(infos.data(), bytes.constData() + offset + header.commercial_info_array_offset, n * sizeof(CommercialInfo));
+    return infos;
 }
 
-static inline std::vector<BeautyNode> parseBeautyNodes(const QByteArray& bytes, int offset=0) {
+static inline std::vector<BeautyInfo> parseBeautyInfos(const QByteArray& bytes, int offset=0) {
     MapDataHeader header = readDataAtOffset<MapDataHeader>(bytes, offset);
-    int n = header.beauty_node_count;
-    std::vector<BeautyNode> nodes(n);
-    memcpy(nodes.data(), bytes.constData() + offset + header.beauty_node_array_offset, n * sizeof(BeautyNode));
-    return nodes;
+    int n = header.beauty_info_count;
+    std::vector<BeautyInfo> infos(n);
+    memcpy(infos.data(), bytes.constData() + offset + header.beauty_info_array_offset, n * sizeof(BeautyInfo));
+    return infos;
 }
 
 // ====================
