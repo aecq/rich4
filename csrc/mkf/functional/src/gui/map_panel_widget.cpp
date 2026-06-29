@@ -10,6 +10,8 @@
 #include <QCursor>
 #include <QVBoxLayout>
 #include <QtMath>
+#include <algorithm>
+#include <functional>
 
 MapPanelWidget::MapPanelWidget(QWidget* parent)
     : QWidget(parent)
@@ -289,176 +291,215 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
 
     if (m_mapNodes.empty()) return;
 
-    // 按节点绘制
+    // ------------------------------------------------------------------
+    // 深度排序（画家算法）：把所有四类可绘制元素先收集，再按画布 y 升序绘制。
+    // 这样 y 大（靠近观察者）的元素会后画，自动覆盖 y 小的元素，避免跨类别重叠错乱。
+    // ------------------------------------------------------------------
+    struct DrawEntry {
+        float sortY;
+        std::function<void()> paint;
+    };
+    std::vector<DrawEntry> drawEntries;
+    drawEntries.reserve(m_mapNodes.size()
+                        + parseFacilityInfos(bytes).size()
+                        + parseCommercialInfos(bytes).size()
+                        + parseBeautyInfos(bytes).size());
+
+    // MapNode 中不变的参数提到循环外
+    QString nodeType = resourceModel->getType(index.row());
+    int chunkOffset = nodeType.mid(3, nodeType.length() - 3).toInt();
+    QColor colors[5] = { Qt::gray, Qt::gray, Qt::cyan, Qt::cyan, Qt::cyan };
+    const int denominator = 2000;
+
+    // 按节点绘制 → 收集
     for (size_t i = 0; i < m_mapNodes.size(); i++) {
         const MapNode& node = m_mapNodes[i];
-
-        // 地理坐标 (node.x, node.y) → 画布坐标（绕 pivot 按当前 North 旋转）
         std::pair<float, float> canvasXY = rotateAround(static_cast<float>(node.x),
                                                         static_cast<float>(node.y),
                                                         m_northDirection);
-        float x = canvasXY.first;
-        float y = canvasXY.second;
+        const float x = canvasXY.first;
+        const float y = canvasXY.second;
 
         QString name = parseBig5Trim(QByteArray::fromRawData(node.name, sizeof(node.name)));
-
-        // 图片
-        QString type = resourceModel->getType(index.row());
-        int chunkOffset = type.mid(3, type.length() - 3).toInt();
         int chunk = node.chunk + chunkOffset;
         const bool hasImage = (node.special > 0 && chunk < (int)nodeImages.size() && !nodeImages[chunk].isNull())
                            || (node.special <= 0 && 0 < chunk && chunk < (int)nodeImages.size());
-        if (hasImage) {
-            QPixmap pixmap = QPixmap::fromImage(nodeImages[chunk]);
-            QBitmap mask = pixmap.createMaskFromColor(TRANSPARENT);
-            pixmap.setMask(mask);
-            QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
-            pixmapItem->setPos(x - nodeInfos[chunk].x, y - nodeInfos[chunk].y);
-        }
 
-        // 颜色映射：type / 2000 取索引
-        QColor colors[5] = { Qt::gray, Qt::gray, Qt::cyan, Qt::cyan, Qt::cyan };
-        const int denominator = 2000;
-
-        // 地名文本
-        if (!name.isEmpty()) {
-            QGraphicsTextItem* textItem = m_mapScene->addText(name);
-            textItem->setPos(x - textItem->boundingRect().width() / 2,
-                             y + ((node.special > 0) ? nodeInfos[chunk].y : 0));
-            textItem->setDefaultTextColor(colors[node.type / denominator]);
-        }
-
-        // 类型数字
-        if (node.type != 0) {
-            QString typeStr = QString::number(node.type);
-            QGraphicsTextItem* typeItem = m_mapScene->addText(typeStr);
-            typeItem->setPos(x - typeItem->boundingRect().width() / 2,
-                             y - ((node.special > 0) ? nodeInfos[chunk].y : 0)
-                               - typeItem->boundingRect().height());
-            typeItem->setDefaultTextColor(colors[node.type / denominator]);
-        }
-
-        // 非特殊节点、无图片：补一个灰点
-        if (node.special <= 0 && chunk <= 0) {
-            QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
-            dot->setBrush(Qt::gray);
-        }
+        drawEntries.push_back(DrawEntry{
+            y,
+            [this, x, y, name, chunk, hasImage, node, chunkOffset, TRANSPARENT,
+             colors, denominator,
+             &nodeImages, &nodeInfos]() {
+                if (hasImage) {
+                    QPixmap pixmap = QPixmap::fromImage(nodeImages[chunk]);
+                    QBitmap mask = pixmap.createMaskFromColor(TRANSPARENT);
+                    pixmap.setMask(mask);
+                    QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
+                    pixmapItem->setPos(x - nodeInfos[chunk].x, y - nodeInfos[chunk].y);
+                }
+                if (!name.isEmpty()) {
+                    QGraphicsTextItem* textItem = m_mapScene->addText(name);
+                    textItem->setPos(x - textItem->boundingRect().width() / 2,
+                                     y + ((node.special > 0) ? nodeInfos[chunk].y : 0));
+                    textItem->setDefaultTextColor(colors[node.type / denominator]);
+                }
+                if (node.type != 0) {
+                    QString typeStr = QString::number(node.type);
+                    QGraphicsTextItem* typeItem = m_mapScene->addText(typeStr);
+                    typeItem->setPos(x - typeItem->boundingRect().width() / 2,
+                                     y - ((node.special > 0) ? nodeInfos[chunk].y : 0)
+                                       - typeItem->boundingRect().height());
+                    typeItem->setDefaultTextColor(colors[node.type / denominator]);
+                }
+                if (node.special <= 0 && chunk <= 0) {
+                    QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
+                    dot->setBrush(Qt::gray);
+                }
+            }
+        });
     }
 
-    // 绘制设施节点
+    // 绘制设施节点 → 收集
     std::vector<FacilityInfo> facilityInfos = parseFacilityInfos(bytes);
     for (const FacilityInfo& item : facilityInfos) {
-        // 地理坐标 → 画布坐标
         std::pair<float, float> canvasXY = rotateAround(static_cast<float>(item.x),
                                                         static_cast<float>(item.y),
                                                         m_northDirection);
-        float x = canvasXY.first;
-        float y = canvasXY.second;
-        // 地块（large tile，S=2；chunk[0] 在 tileImages 的下标 = LARGE_TILE_CHUNK_OFFSET）
+        const float x = canvasXY.first;
+        const float y = canvasXY.second;
         const int absTileChunk = LARGE_TILE_CHUNK_OFFSET + (item.face & 1);
         const int tileChunk = offsetChunk2(absTileChunk, LARGE_TILE_CHUNK_OFFSET, m_northDirection);
-        QPixmap tilePixmap = QPixmap::fromImage(tileImages[tileChunk]);
-        QBitmap tileMask = tilePixmap.createMaskFromColor(TRANSPARENT);
-        tilePixmap.setMask(tileMask);
-        QGraphicsPixmapItem* tilePixmapItem = m_mapScene->addPixmap(tilePixmap);
-        tilePixmapItem->setPos(x - tileInfos[tileChunk].x, y - tileInfos[tileChunk].y);
-        // 名称
         QString name = parseBig5Trim(QByteArray::fromRawData(item.name, sizeof(item.name)));
-        if (!name.isEmpty()) {
-            QGraphicsTextItem* textItem = m_mapScene->addText(name);
-            textItem->setPos(x - textItem->boundingRect().width() / 2,
-                             y + textItem->boundingRect().height() / 2);
-            textItem->setDefaultTextColor(Qt::red);
-        }
-        // 可视化定位点
-        QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
-        dot->setBrush(Qt::gray);
+
+        drawEntries.push_back(DrawEntry{
+            y,
+            [this, x, y, tileChunk, name, TRANSPARENT,
+             &tileImages, &tileInfos]() {
+                QPixmap tilePixmap = QPixmap::fromImage(tileImages[tileChunk]);
+                QBitmap tileMask = tilePixmap.createMaskFromColor(TRANSPARENT);
+                tilePixmap.setMask(tileMask);
+                QGraphicsPixmapItem* tilePixmapItem = m_mapScene->addPixmap(tilePixmap);
+                tilePixmapItem->setPos(x - tileInfos[tileChunk].x, y - tileInfos[tileChunk].y);
+                if (!name.isEmpty()) {
+                    QGraphicsTextItem* textItem = m_mapScene->addText(name);
+                    textItem->setPos(x - textItem->boundingRect().width() / 2,
+                                     y + textItem->boundingRect().height() / 2);
+                    textItem->setDefaultTextColor(Qt::red);
+                }
+                QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
+                dot->setBrush(Qt::gray);
+            }
+        });
     }
 
-    // 绘制上市企业节点
+    // 绘制上市企业节点 → 收集
     std::vector<CommercialInfo> commercialInfos = parseCommercialInfos(bytes);
     for (const CommercialInfo& item : commercialInfos) {
-        // 地理坐标 → 画布坐标
         std::pair<float, float> canvasXY = rotateAround(static_cast<float>(item.x),
                                                         static_cast<float>(item.y),
                                                         m_northDirection);
-        float x = canvasXY.first;
-        float y = canvasXY.second;
-        // 地块（large tile，S=2）
+        const float x = canvasXY.first;
+        const float y = canvasXY.second;
         const int absTileChunk = LARGE_TILE_CHUNK_OFFSET + (item.face & 1);
         const int tileChunk = offsetChunk2(absTileChunk, LARGE_TILE_CHUNK_OFFSET, m_northDirection);
-        QPixmap tilePixmap = QPixmap::fromImage(tileImages[tileChunk]);
-        QBitmap tileMask = tilePixmap.createMaskFromColor(TRANSPARENT);
-        tilePixmap.setMask(tileMask);
-        QGraphicsPixmapItem* tilePixmapItem = m_mapScene->addPixmap(tilePixmap);
-        tilePixmapItem->setPos(x - tileInfos[tileChunk].x, y - tileInfos[tileChunk].y);
-        // 图片（Sprite 8 方图；chunk[0] 在该 sprite 资源 images[] 的下标 = 0，即 base=0）
         const int16_t spriteOffset = item.sprite;
-        if (spriteOffset <= 0) continue;
-        const int chunk = offsetChunk8(item.face, 0, m_northDirection);
-        const int spriteResourceIndex = 3 * count + MAP_SPRITE_OFFSET + spriteOffset;
-        if (spriteResourceIndex <= 0 || spriteResourceIndex >= resourceModel->n()) continue;
-        const QString type = resourceModel->getType(spriteResourceIndex);
-        if (!type.startsWith("SPR") && !type.startsWith("SMP")) continue;
-        std::vector<GraphInfo> infos = parseGraphInfos(resourceModel->getResource(spriteResourceIndex));
-        if (chunk < 0 || chunk >= (int)infos.size()) continue;
-        std::vector<QImage> images = parseImages(resourceModel->getResource(spriteResourceIndex));
-        if (images[chunk].isNull()) continue;
-        QPixmap pixmap = QPixmap::fromImage(images[chunk]);
-        QBitmap mask = pixmap.createMaskFromColor(TRANSPARENT);
-        pixmap.setMask(mask);
-        QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
-        pixmapItem->setPos(x - infos[chunk].x, y - infos[chunk].y);
-        // 名称
+        const int face = item.face;
         QString name = parseBig5Trim(QByteArray::fromRawData(item.name, sizeof(item.name)));
-        if (!name.isEmpty()) {
-            QGraphicsTextItem* textItem = m_mapScene->addText(name);
-            textItem->setPos(x - textItem->boundingRect().width() / 2,
-                             y + textItem->boundingRect().height() / 2);
-            textItem->setDefaultTextColor(Qt::blue);
-        }
-        // 可视化定位点
-        QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
-        dot->setBrush(Qt::gray);
+
+        drawEntries.push_back(DrawEntry{
+            y,
+            [this, x, y, tileChunk, spriteOffset, face, name,
+             TRANSPARENT, count, MAP_SPRITE_OFFSET, LARGE_TILE_CHUNK_OFFSET,
+             resourceModel,
+             &tileImages, &tileInfos]() {
+                // 地块
+                QPixmap tilePixmap = QPixmap::fromImage(tileImages[tileChunk]);
+                QBitmap tileMask = tilePixmap.createMaskFromColor(TRANSPARENT);
+                tilePixmap.setMask(tileMask);
+                QGraphicsPixmapItem* tilePixmapItem = m_mapScene->addPixmap(tilePixmap);
+                tilePixmapItem->setPos(x - tileInfos[tileChunk].x, y - tileInfos[tileChunk].y);
+                // Sprite
+                if (spriteOffset <= 0) return;
+                const int chunk = offsetChunk8(face, 0, m_northDirection);
+                const int spriteResourceIndex = 3 * count + MAP_SPRITE_OFFSET + spriteOffset;
+                if (spriteResourceIndex <= 0 || spriteResourceIndex >= resourceModel->n()) return;
+                const QString type = resourceModel->getType(spriteResourceIndex);
+                if (!type.startsWith("SPR") && !type.startsWith("SMP")) return;
+                std::vector<GraphInfo> infos = parseGraphInfos(resourceModel->getResource(spriteResourceIndex));
+                if (chunk < 0 || chunk >= (int)infos.size()) return;
+                std::vector<QImage> images = parseImages(resourceModel->getResource(spriteResourceIndex));
+                if (images[chunk].isNull()) return;
+                QPixmap pixmap = QPixmap::fromImage(images[chunk]);
+                QBitmap mask = pixmap.createMaskFromColor(TRANSPARENT);
+                pixmap.setMask(mask);
+                QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
+                pixmapItem->setPos(x - infos[chunk].x, y - infos[chunk].y);
+                // 名称
+                if (!name.isEmpty()) {
+                    QGraphicsTextItem* textItem = m_mapScene->addText(name);
+                    textItem->setPos(x - textItem->boundingRect().width() / 2,
+                                     y + textItem->boundingRect().height() / 2);
+                    textItem->setDefaultTextColor(Qt::blue);
+                }
+                // 可视化定位点
+                QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
+                dot->setBrush(Qt::gray);
+            }
+        });
     }
 
-    // 绘制美观节点
+    // 绘制美观节点 → 收集
     std::vector<BeautyInfo> beautyInfos = parseBeautyInfos(bytes);
     for (const BeautyInfo& item : beautyInfos) {
-        // 地理坐标 → 画布坐标
         std::pair<float, float> canvasXY = rotateAround(static_cast<float>(item.x),
                                                         static_cast<float>(item.y),
                                                         m_northDirection);
-        float x = canvasXY.first;
-        float y = canvasXY.second;
-        // 图片（Sprite 8 方图；base=0）
+        const float x = canvasXY.first;
+        const float y = canvasXY.second;
         const int16_t spriteOffset = item.sprite;
-        if (spriteOffset <= 0) continue;
-        const int chunk = offsetChunk8(item.face, 0, m_northDirection);
-        const int spriteResourceIndex = 3 * count + MAP_SPRITE_OFFSET + spriteOffset;
-        if (spriteResourceIndex <= 0 || spriteResourceIndex >= resourceModel->n()) continue;
-        const QString type = resourceModel->getType(spriteResourceIndex);
-        if (!type.startsWith("SPR") && !type.startsWith("SMP")) continue;
-        std::vector<GraphInfo> infos = parseGraphInfos(resourceModel->getResource(spriteResourceIndex));
-        if (chunk < 0 || chunk >= (int)infos.size()) continue;
-        std::vector<QImage> images = parseImages(resourceModel->getResource(spriteResourceIndex));
-        if (images[chunk].isNull()) continue;
-        QPixmap pixmap = QPixmap::fromImage(images[chunk]);
-        QBitmap mask = pixmap.createMaskFromColor(TRANSPARENT);
-        pixmap.setMask(mask);
-        QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
-        pixmapItem->setPos(x - infos[chunk].x, y - infos[chunk].y);
-        // 名称
+        const int face = item.face;
         QString name = parseBig5Trim(QByteArray::fromRawData(item.name, sizeof(item.name)));
-        if (!name.isEmpty()) {
-            QGraphicsTextItem* textItem = m_mapScene->addText(name);
-            textItem->setPos(x - textItem->boundingRect().width() / 2,
-                             y + textItem->boundingRect().height() / 2);
-            textItem->setDefaultTextColor(Qt::green);
-        }
-        // 可视化定位点
-        QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
-        dot->setBrush(Qt::green);
+
+        drawEntries.push_back(DrawEntry{
+            y,
+            [this, x, y, spriteOffset, face, name,
+             TRANSPARENT, count, MAP_SPRITE_OFFSET, resourceModel]() {
+                if (spriteOffset <= 0) return;
+                const int chunk = offsetChunk8(face, 0, m_northDirection);
+                const int spriteResourceIndex = 3 * count + MAP_SPRITE_OFFSET + spriteOffset;
+                if (spriteResourceIndex <= 0 || spriteResourceIndex >= resourceModel->n()) return;
+                const QString type = resourceModel->getType(spriteResourceIndex);
+                if (!type.startsWith("SPR") && !type.startsWith("SMP")) return;
+                std::vector<GraphInfo> infos = parseGraphInfos(resourceModel->getResource(spriteResourceIndex));
+                if (chunk < 0 || chunk >= (int)infos.size()) return;
+                std::vector<QImage> images = parseImages(resourceModel->getResource(spriteResourceIndex));
+                if (images[chunk].isNull()) return;
+                QPixmap pixmap = QPixmap::fromImage(images[chunk]);
+                QBitmap mask = pixmap.createMaskFromColor(TRANSPARENT);
+                pixmap.setMask(mask);
+                QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
+                pixmapItem->setPos(x - infos[chunk].x, y - infos[chunk].y);
+                if (!name.isEmpty()) {
+                    QGraphicsTextItem* textItem = m_mapScene->addText(name);
+                    textItem->setPos(x - textItem->boundingRect().width() / 2,
+                                     y + textItem->boundingRect().height() / 2);
+                    textItem->setDefaultTextColor(Qt::green);
+                }
+                QGraphicsEllipseItem* dot = m_mapScene->addEllipse(x - 3, y - 3, 6, 6);
+                dot->setBrush(Qt::green);
+            }
+        });
+    }
+
+    // 按画布 y 升序排序（小 y 先画被遮挡，大 y 后画覆盖上层 → 画家算法）
+    std::sort(drawEntries.begin(), drawEntries.end(),
+              [](const DrawEntry& a, const DrawEntry& b) {
+                  return a.sortY < b.sortY;
+              });
+
+    // 统一绘制
+    for (auto& entry : drawEntries) {
+        entry.paint();
     }
 
     // 根据实际绘制内容调整 sceneRect，确保放大后可滚动到所有边缘
