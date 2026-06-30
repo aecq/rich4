@@ -75,7 +75,7 @@ void MainWindow::createMenuBar() {
     
     QAction* openAction = fileMenu->addAction("&Open MKF...");
     openAction->setShortcut(QKeySequence::Open);
-    connect(openAction, &QAction::triggered, this, &MainWindow::openFile);
+    connect(openAction, &QAction::triggered, this, [this]() { openFile(); });
 
     saveCSVAction = fileMenu->addAction("Save CSV");
     saveCSVAction->setShortcut(QKeySequence::Save);
@@ -107,7 +107,7 @@ void MainWindow::createToolBar() {
     QToolBar* toolBar = addToolBar("Main");
     
     QAction* openAction = toolBar->addAction("Open");
-    connect(openAction, &QAction::triggered, this, &MainWindow::openFile);
+    connect(openAction, &QAction::triggered, this, [this]() { openFile(); });
 
     toolBar->addSeparator();
 
@@ -130,6 +130,18 @@ void MainWindow::setupConnections() {
 void MainWindow::openFile() {
     QString filepath = QFileDialog::getOpenFileName(this, "Open MKF File", "", "MKF Files (*.mkf)");
     if (filepath.isEmpty()) {
+        return;
+    }
+    openFile(filepath);
+}
+
+void MainWindow::openFile(const QString& filepath) {
+    if (filepath.isEmpty()) {
+        return;
+    }
+    QFile file(filepath);
+    if (!file.exists()) {
+        statusBar()->showMessage(QString("File not found: %1").arg(filepath));
         return;
     }
     resourceModel->init(filepath);

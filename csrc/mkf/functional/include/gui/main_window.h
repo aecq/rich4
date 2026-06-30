@@ -20,6 +20,7 @@ public:
     // Cache* getCache() { return cache; }
     ResourceModel* getResourceModel() { return resourceModel; }
     QTreeView* getTreeView() { return treeView; }
+    void openFile(const QString& filepath);
     
 private slots:
     void openFile();
