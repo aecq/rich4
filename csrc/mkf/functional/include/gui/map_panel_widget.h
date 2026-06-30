@@ -3,14 +3,22 @@
 #include "gui/map_graphics_view.h"
 #include "core/types/map.h"
 #include "core/utils/resource_model.h"
+#include <QByteArray>
 #include <QGraphicsScene>
+#include <QHash>
 #include <QModelIndex>
+#include <QPair>
+#include <QString>
 #include <QWidget>
 #include <utility>
 #include <vector>
 
+struct MapPanelWidgetTester;   // forward: test peer (friend)
+
 class MapPanelWidget : public QWidget {
     Q_OBJECT
+    // 测试用：允许 MapPanelWidgetTester 访问内部状态/两阶段函数
+    friend struct MapPanelWidgetTester;
 public:
     explicit MapPanelWidget(QWidget* parent = nullptr);
     ~MapPanelWidget() override;
@@ -71,11 +79,24 @@ private slots:
 private:
     void setupUI();
 
-    // 把 displayMap 拆成两块：
+    // 把 displayMap 拆成两块（现仍保留用于兼容，内部直接调用 ensureLoaded + redrawScene）：
     //   populateScene: 负责往 QGraphicsScene 里塞节点图片/文字/圆点（原来的 displayMap 主体）
     //   buildMapText:  负责生成节点列表文本（原来的 displayMapText，返回 QString 不直接写 UI）
     void populateScene(const QModelIndex& index, ResourceModel* resourceModel);
     QString buildMapText(const QModelIndex& index, ResourceModel* resourceModel);
+
+    // ===================================================================
+    // 两阶段渲染（性能优化：旋转不再重新 parse 资源 bytes）
+    // ===================================================================
+    // ensureLoaded: 若 (index, resourceModel) 与已加载身份相同则直接返回 true；
+    //               否则执行完整 parse 流程，写入派生成员 + 5 组 names 向量，
+    //               并更新已加载身份。返回值：false 表示输入无效（未加载）。
+    bool ensureLoaded(const QModelIndex& index, ResourceModel* resourceModel);
+
+    // redrawScene: 使用已加载成员（m_mapNodes / *Infos / *Images 等）和当前
+    //              m_northDirection，重新把所有 item 画到 m_mapScene。
+    //              不会做任何 parse* / getResource 调用，保证 O(节点数) 级的旋转延迟。
+    void redrawScene();
 
     // --- 通用坐标旋转辅助函数 ---
     // 把"地理坐标 (gx, gy)"按当前 TopLeftIndex 绕枢轴 (m_pivotX, m_pivotY) 旋转到"画布坐标"。
@@ -100,13 +121,54 @@ private:
     int offsetChunk2(int absChunk, int base, int i) const;
 
 private:
-    // --- 状态 ---
+    // --- 加载身份（用于 ensureLoaded 命中判断；与 raw bytes 无关的"身份 key"） ---
+    QModelIndex    m_loadedIndex;        // 上次成功载入 ensureLoaded 用的 index
+    ResourceModel* m_loadedModel = nullptr;   // 上次载入 ensureLoaded 用的 model
+
+    // 测试/验证用：ensureLoaded 真实执行 parse 的次数（命中身份时不 ++）
+    int m_parseCount = 0;
+
+    // --- 状态（旧有） ---
     std::vector<MapNode> m_mapNodes;
     int m_northDirection;   // TopLeftIndex 0..7；初值 = kNorthTopLeftIndex
     float m_pivotX;         // 旋转枢轴 X（画布/场景坐标，运行时可改）
     float m_pivotY;         // 旋转枢轴 Y
     QModelIndex m_mapIndex;
     ResourceModel* m_resourceModel;
+
+    // --- Raw bytes（来自 getResource，命名不含 cached 字样）及派生 parse 产物 ---
+    QByteArray m_mapBytes;         // = resourceModel->getResource(index.row())
+    int        m_gndCount = 0;     // 统计：GND 资源数
+    QString    m_nodeType;         // = resourceModel->getType(index.row())
+    int        m_chunkOffset = 0;  // 自 nodeType 提取
+
+    std::vector<QImage>     m_nodeImages;
+    std::vector<GraphInfo>  m_nodeInfos;
+    std::vector<QImage>     m_tileImages;
+    std::vector<GraphInfo>  m_tileInfos;
+
+    std::vector<FacilityInfo>    m_facilityInfos;
+    std::vector<CommercialInfo>  m_commercialInfos;
+    std::vector<BeautyInfo>      m_beautyInfos;
+
+    // Sprite 资源按 resource index 缓存：
+    //   key   = spriteResourceIndex（3 * count + MAP_SPRITE_OFFSET + spriteOffset）
+    //   value = (infos, images)
+    // 保证同一个 SPR/SMP 资源在一次 widget 生命周期里只 parse 1 次。
+    QHash<int, QPair<std::vector<GraphInfo>, std::vector<QImage>>> m_sprites;
+
+    // --- 5 组 QString 向量：ensureLoaded 阶段一次性 parseBig5Trim / QString::number 转好 ---
+    //   m_mapNodeNames[i]   ↔ m_mapNodes[i]         ·name
+    //   m_facilityNames[i]  ↔ m_facilityInfos[i]    ·name
+    //   m_commercialNames[i]↔ m_commercialInfos[i]  ·name
+    //   m_beautyNames[i]    ↔ m_beautyInfos[i]      ·name
+    //   m_mapNodeTypes[i]   ↔ QString::number(m_mapNodes[i].type)
+    // 不变量：任何时刻它们与对应 info/node 数组 size 保持一致。
+    std::vector<QString> m_mapNodeNames;
+    std::vector<QString> m_facilityNames;
+    std::vector<QString> m_commercialNames;
+    std::vector<QString> m_beautyNames;
+    std::vector<QString> m_mapNodeTypes;
 
     // --- UI ---
     MapGraphicsView* m_mapView;
