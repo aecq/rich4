@@ -33,15 +33,33 @@ void ResourceModel::clear() {
     comments.clear();
 }
 
-ResourceOffset ResourceModel::getOffset(int index) { return cache->getOffset(index); }
+ResourceOffset ResourceModel::getOffset(int index) {
+    if (!cache) return ResourceOffset{};
+    if (index < 0 || index >= (int)cache->n()) return ResourceOffset{};
+    return cache->getOffset(index);
+}
 
-ResourceHeader ResourceModel::getHeader(int index) { return cache->getHeader(index); }
+ResourceHeader ResourceModel::getHeader(int index) {
+    if (!cache) return ResourceHeader{};
+    if (index < 0 || index >= (int)cache->n()) return ResourceHeader{};
+    return cache->getHeader(index);
+}
 
-QString ResourceModel::getSignature(int index) { return cache->getSignature(index); }
+QString ResourceModel::getSignature(int index) {
+    if (!cache) return Cache::unknownSignature();
+    if (index < 0 || index >= (int)cache->n()) return Cache::unknownSignature();
+    return cache->getSignature(index);
+}
 
-QByteArray ResourceModel::getResource(int index) { return cache->getResource(index); }
+QByteArray ResourceModel::getResource(int index) {
+    if (!cache) return QByteArray();
+    if (index < 0 || index >= (int)cache->n()) return QByteArray();
+    return cache->getResource(index);
+}
 
-size_t ResourceModel::n() { return cache->n(); }
+size_t ResourceModel::n() {
+    return cache ? cache->n() : 0;
+}
 
 QString ResourceModel::getMKFFolder() {
     if (filenamePrefix.lastIndexOf("/") == -1) {
@@ -68,17 +86,23 @@ QString ResourceModel::getCSVFilename() {
 }
 
 void ResourceModel::setType(int index, QString type) {
-    if (index < 0 || index >= cache->n()) {
+    if (!cache || index < 0 || index >= (int)cache->n()) {
         qDebug() << "setType: index out of range";
         return;
+    }
+    if ((int)types.size() != (int)cache->n()) {
+        types.resize(cache->n());
     }
     types[index] = type;
 }
 
 void ResourceModel::setComment(int index, QString comment) {
-    if (index < 0 || index >= cache->n()) {
+    if (!cache || index < 0 || index >= (int)cache->n()) {
         qDebug() << "setComment: index out of range";
         return;
+    }
+    if ((int)comments.size() != (int)cache->n()) {
+        comments.resize(cache->n());
     }
     comments[index] = comment;
 }
@@ -169,9 +193,15 @@ void ResourceModel::saveCSV() {
     emit saved("Saved " + csvFilename);
 }
 
-QString ResourceModel::getType(int index) { return types[index]; }
+QString ResourceModel::getType(int index) {
+    if (index < 0 || index >= (int)types.size()) return QString();
+    return types[index];
+}
 
-QString ResourceModel::getComment(int index) { return comments[index]; }
+QString ResourceModel::getComment(int index) {
+    if (index < 0 || index >= (int)comments.size()) return QString();
+    return comments[index];
+}
 
 QString ResourceModel::guessType(int index) {
     if (index < 0 || index >= n()) {
