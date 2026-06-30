@@ -296,6 +296,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
     //   Layer  5 = 地块
     //   Layer 10 = 贴地层   → MapNode（地面贴图，永远在立体物体之下）
     //   Layer 20 = 立体物体层 → Facility/Commercial/Beauty（建筑 / 装饰精灵）
+    //   Layer 30 = Sign
     // 排序规则：先按 layer 升序（低层先画被高层盖住），同 layer 再按画布 y 升序
     // （y 小先画被 y 大的盖 → 同层内近景压远景）。
     // ------------------------------------------------------------------
@@ -343,6 +344,13 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
                     QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
                     pixmapItem->setPos(x - nodeInfos[chunk].x, y - nodeInfos[chunk].y);
                 }
+            }
+        });
+
+        drawEntries.push_back(DrawEntry{
+            30,
+            y,
+            [this, x, y, name, chunk, node, colors, denominator, &nodeInfos]() {
                 if (!name.isEmpty()) {
                     QGraphicsTextItem* textItem = m_mapScene->addText(name);
                     textItem->setPos(x - textItem->boundingRect().width() / 2,
@@ -390,7 +398,7 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
         });
 
         drawEntries.push_back(DrawEntry{
-            20,  // Layer 20 = 立体物体层
+            30,
             y,
             [this, x, y, name]() {
                 if (!name.isEmpty()) {
@@ -452,6 +460,13 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
                 pixmap.setMask(mask);
                 QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
                 pixmapItem->setPos(x - infos[chunk].x, y - infos[chunk].y);
+            }
+        });
+
+        drawEntries.push_back(DrawEntry{
+            30,
+            y,
+            [this, x, y, name]() {
                 // 名称
                 if (!name.isEmpty()) {
                     QGraphicsTextItem* textItem = m_mapScene->addText(name);
@@ -498,6 +513,13 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
                 pixmap.setMask(mask);
                 QGraphicsPixmapItem* pixmapItem = m_mapScene->addPixmap(pixmap);
                 pixmapItem->setPos(x - infos[chunk].x, y - infos[chunk].y);
+            }
+        });
+
+        drawEntries.push_back(DrawEntry{
+            30,
+            y,
+            [this, x, y, name]() {
                 if (!name.isEmpty()) {
                     QGraphicsTextItem* textItem = m_mapScene->addText(name);
                     textItem->setPos(x - textItem->boundingRect().width() / 2,
