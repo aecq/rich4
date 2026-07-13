@@ -715,7 +715,8 @@ void MapPanelWidget::populateScene(const QModelIndex& index, ResourceModel* reso
 QString MapPanelWidget::buildMapText(const QModelIndex& index, ResourceModel* resourceModel) {
     QString text;
     text += resourceModel->getType(index.row());
-    text += "\nScale: CTRL + Wheel";
+    text += "\nCtrl+Wheel Scale";
+    text += "\n,/. Rotate";
     text += QString("\nMap Node Count: %1").arg(m_mapNodes.size()) + "\n";
 
     const bool haveNames = (m_mapNodeNames.size() == m_mapNodes.size())
