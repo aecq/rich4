@@ -1,6 +1,7 @@
 #include "gui/graphics_text_window.h"
 #include "core/io/parse.h"
 #include "core/io/parse_flic.h"
+#include "core/types/ground.h"
 #include "gui/main_window.h"
 #include <QFileDialog>
 #include <QGraphicsEllipseItem>
@@ -54,7 +55,7 @@ void GraphicsTextWindow::setupUI() {
     // 6. 左侧：gallery（图片列表） + mapPanel（地图视图，互斥显示）
     gallery = new QListWidget(leftPanel);
     gallery->setViewMode(QListWidget::IconMode);
-    gallery->setIconSize(QSize(1280, 960));
+    gallery->setIconSize(QSize(2560, 1920));
     leftLayout->addWidget(gallery);
 
     mapPanel = new MapPanelWidget(leftPanel);
@@ -95,6 +96,10 @@ void GraphicsTextWindow::update(const QModelIndex &index) {
             displayRawImage(index, resourceModel, false);
         } else if (type.startsWith("$")) {
             displayRawImage(index, resourceModel, true);
+        } else if (type.startsWith("GND")) {
+            Ground ground = parseGround(resourceModel->getResource(index.row()));
+            m_images.push_back(ground.stitchFull());
+            displayImages();
         } else if (type.startsWith("MAP")) {
             // MAP 模式：切换到 mapPanel，文本由 mapTextReady 信号异步填充
             gallery->hide();
