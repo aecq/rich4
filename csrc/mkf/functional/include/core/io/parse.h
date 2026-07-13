@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/types/graph_info.h"
+#include "core/types/ground.h"
 #include "core/types/map.h"
 #include "core/types/resource_header.h"
 #include "core/types/spr_smp_header.h"
@@ -440,6 +441,20 @@ static inline QString parseBig5(const QByteArray& bytes) {
     } else {
         return output;
     }
+}
+
+// ====================
+//  parseGroundHeader(bytes, offset): 从 const QByteArray& bytes 中解析 Ground Header
+// ====================
+static inline GroundHeader parseGroundHeader(const QByteArray& bytes, int offset=0) {
+    return readDataAtOffset<GroundHeader>(bytes, offset);
+}
+
+// ====================
+//  parseGround(bytes, offset): 从 const QByteArray& bytes 中解析完整的 Ground 数据
+// ====================
+static inline Ground parseGround(const QByteArray& bytes, int offset=0) {
+    return Ground(bytes.mid(offset));
 }
 
 // ====================

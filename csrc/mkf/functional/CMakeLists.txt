@@ -42,6 +42,7 @@ target_compile_definitions(ma_lib PRIVATE
 )
 
 set(SOURCES
+    src/core/types/ground.cpp
     src/core/utils/cache.cpp
     src/core/utils/resource_model.cpp
     src/core/utils/big5hkscs_table.cpp
