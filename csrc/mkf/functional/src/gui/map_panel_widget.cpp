@@ -116,6 +116,7 @@ void MapPanelWidget::clear() {
     m_nodeInfos.clear();
     m_tileImages.clear();
     m_tileInfos.clear();
+    m_groundImages.clear();
     m_facilityInfos.clear();
     m_commercialInfos.clear();
     m_beautyInfos.clear();
@@ -215,6 +216,15 @@ bool MapPanelWidget::ensureLoaded(const QModelIndex& index, ResourceModel* resou
         }
     }
 
+    // 2b+. 解析 GND 资源，缓存 stitchFull() 结果
+    m_groundImages.clear();
+    m_groundImages.resize(m_gndCount);
+    for (int i = 0; i < m_gndCount; i++) {
+        QByteArray gndBytes = resourceModel->getResource(2 * i);  // require GND at 0, 2, ...
+        Ground ground(gndBytes);
+        m_groundImages[i] = ground.stitchFull();
+    }
+
     // 2c. 地图贴地 sprite + 地块 的图元信息
     const int TILE_OFFSET = 2;
     m_nodeImages = parseImages(resourceModel->getResource(3 * m_gndCount));
@@ -306,6 +316,7 @@ void MapPanelWidget::redrawScene() {
 
     // ------------------------------------------------------------------
     // 分层深度排序（画家算法 + 层级）：
+    //   Layer  0 = Ground
     //   Layer  5 = 地块
     //   Layer 10 = 贴地层   → MapNode（地面贴图，永远在立体物体之下）
     //   Layer 20 = 立体物体层 → Facility/Commercial/Beauty（建筑 / 装饰精灵）
@@ -322,6 +333,23 @@ void MapPanelWidget::redrawScene() {
                         + m_facilityInfos.size()
                         + m_commercialInfos.size()
                         + m_beautyInfos.size());
+
+    // ---------------------------------------------------------------
+    // Ground 层：Layer 0（最底层地面）
+    // ---------------------------------------------------------------
+    const qreal theta = qDegreesToRadians(static_cast<qreal>(m_northDirection) * kAngleStepDeg - 22.5);
+    if (m_mapIndex.row() >= 1)
+    {
+        const QImage& groundImage = m_groundImages[(m_mapIndex.row() - 1) / 2];
+        if (!groundImage.isNull()) {
+            QPixmap pixmap = QPixmap::fromImage(groundImage);
+            QGraphicsPixmapItem* groundItem = m_mapScene->addPixmap(pixmap);
+            groundItem->setPos(0, 0);
+            groundItem->setTransform(QTransform().translate(m_pivotX, m_pivotY)
+                                                .rotateRadians(theta)
+                                                .translate(-m_pivotX, -m_pivotY));
+        }
+    }
 
     // ---------------------------------------------------------------
     // MapNode 层：Layer 10（贴地）+ Layer 30（Sign/dot/typeStr）

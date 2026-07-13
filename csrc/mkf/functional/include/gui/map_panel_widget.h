@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gui/map_graphics_view.h"
+#include "core/types/ground.h"
 #include "core/types/map.h"
 #include "core/utils/resource_model.h"
 #include <QByteArray>
@@ -146,6 +147,7 @@ private:
     std::vector<GraphInfo>  m_nodeInfos;
     std::vector<QImage>     m_tileImages;
     std::vector<GraphInfo>  m_tileInfos;
+    std::vector<QImage>     m_groundImages;
 
     std::vector<FacilityInfo>    m_facilityInfos;
     std::vector<CommercialInfo>  m_commercialInfos;
