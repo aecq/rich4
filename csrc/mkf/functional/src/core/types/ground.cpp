@@ -57,3 +57,50 @@ QImage Ground::getTile(uint16_t index) const {
     }
     return QImage();
 }
+
+QImage Ground::stitchFull() {
+    return stitchRect(QRect(0, 0, header.column, header.row));
+}
+
+QImage Ground::stitchRect(QRect slice) const {
+    if (slice.x() < 0 || slice.y() < 0 ||
+        slice.x() + slice.width() > header.column ||
+        slice.y() + slice.height() > header.row ||
+        slice.width() <= 0 || slice.height() <= 0) {
+        return QImage();
+    }
+
+    const int outWidth = slice.width() * TILE_WIDTH;
+    const int outHeight = slice.height() * TILE_HEIGHT;
+    QImage result(outWidth, outHeight, QImage::Format_Indexed8);
+    result.setColorTable(palette);
+
+    for (int gy = 0; gy < slice.height(); ++gy) {
+        for (int gx = 0; gx < slice.width(); ++gx) {
+            const int gridX = slice.x() + gx;
+            const int gridY = slice.y() + gy;
+            const int indexOffset = gridY * header.column + gridX;
+
+            if (indexOffset >= static_cast<int>(indices.size())) {
+                continue;
+            }
+
+            const uint16_t tileIndex = indices[indexOffset];
+            if (tileIndex >= tiles.size()) {
+                continue;
+            }
+
+            const QImage& tile = tiles[tileIndex];
+            const int destX = gx * TILE_WIDTH;
+            const int destY = gy * TILE_HEIGHT;
+
+            for (int ty = 0; ty < TILE_HEIGHT; ++ty) {
+                const uchar* srcLine = tile.constScanLine(ty);
+                uchar* destLine = result.scanLine(destY + ty);
+                memcpy(destLine + destX, srcLine, TILE_WIDTH);
+            }
+        }
+    }
+
+    return result;
+}

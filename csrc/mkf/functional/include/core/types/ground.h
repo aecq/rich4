@@ -2,6 +2,7 @@
 
 #include <QByteArray>
 #include <QImage>
+#include <QRect>
 #include <QRgb>
 #include <QVector>
 
@@ -28,4 +29,6 @@ public:
     QVector<uint16_t> getIndices() const;
     QVector<QImage> getTiles() const;
     QImage getTile(uint16_t index) const;
+    QImage stitchFull();
+    QImage stitchRect(QRect slice) const;
 };
