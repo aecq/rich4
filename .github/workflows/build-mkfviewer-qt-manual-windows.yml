@@ -1,0 +1,126 @@
+name: Build MkfViewer Qt Windows Manual
+run-name: MkfViewer Qt Windows Manual | ${{ github.event.inputs.build_tag }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_tag:
+        description: Build tag shown on zip file name
+        required: true
+        default: win
+      qt_version:
+        description: Qt version
+        required: true
+        default: 6.12.0
+      qt_arch:
+        description: Qt architecture
+        required: true
+        default: mingw_64
+      mingw_toolchain_dir:
+        description: MinGW toolchain directory
+        required: true
+        default: mingw1310_64
+      mingw_aqt_id:
+        description: MinGW aqt tool variant id
+        required: true
+        default: tools_mingw1310
+
+env:
+  QT_BASEDIR: ${{ github.workspace }}\Qt
+  QT_PREFIX: ${{ github.workspace }}\Qt\${{ github.event.inputs.qt_version }}\${{ github.event.inputs.qt_arch }}
+  MINGW_BIN: ${{ github.workspace }}\Qt\Tools\${{ github.event.inputs.mingw_toolchain_dir }}\bin
+
+  CMAKE_SOURCE: csrc/mkf/functional
+  BUILD_FOLDER: build_mkfviewer
+  PACKAGE_FOLDER: MkfViewer_Package
+  EXE_NAME: MkfViewer.exe
+
+jobs:
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Python (for aqtinstall)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.QT_BASEDIR }}
+          key: win-qt${{ github.event.inputs.qt_version }}-${{ github.event.inputs.qt_arch }}-${{ github.event.inputs.mingw_toolchain_dir }}
+
+      - name: Install aqtinstall & download Qt + MinGW
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        run: |
+          pip install aqtinstall==3.3.0
+          aqt install-qt windows desktop ${{ github.event.inputs.qt_version }} win64_mingw -O ${{ env.QT_BASEDIR }}
+          aqt install-tool windows desktop ${{ github.event.inputs.mingw_aqt_id }} -O ${{ env.QT_BASEDIR }}
+        shell: pwsh
+
+      - name: Add Qt & MinGW to PATH
+        run: |
+          $env:PATH = "${{ env.QT_PREFIX }}\bin;${{ env.MINGW_BIN }};$env:PATH"
+          echo "PATH=$env:PATH" | Out-File -FilePath $env:GITHUB_PATH -Append
+        shell: pwsh
+
+      - name: CMake Configure
+        run: |
+          if (Test-Path ${{ env.BUILD_FOLDER }}) { Remove-Item -Recurse -Force ${{ env.BUILD_FOLDER }} }
+          New-Item -ItemType Directory -Path ${{ env.BUILD_FOLDER }} | Out-Null
+          cmake `
+            -S ${{ env.CMAKE_SOURCE }} `
+            -B ${{ env.BUILD_FOLDER }} `
+            -DCMAKE_PREFIX_PATH="${{ env.QT_PREFIX }}" `
+            -G "MinGW Makefiles" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_CXX_FLAGS_RELEASE="-Os -g0" `
+            -DCMAKE_C_FLAGS_RELEASE="-Os -g0"
+        shell: pwsh
+
+      - name: CMake Build target MkfViewer
+        run: |
+          cmake --build ${{ env.BUILD_FOLDER }} --target MkfViewer
+        shell: pwsh
+
+      - name: Prepare deploy package folder
+        run: |
+          if (Test-Path ${{ env.PACKAGE_FOLDER }}) { Remove-Item -Recurse -Force ${{ env.PACKAGE_FOLDER }} }
+          New-Item -ItemType Directory -Path ${{ env.PACKAGE_FOLDER }} | Out-Null
+          Copy-Item "${{ env.BUILD_FOLDER }}\${{ env.EXE_NAME }}" "${{ env.PACKAGE_FOLDER }}\"
+        shell: pwsh
+
+      - name: Run windeployqt
+        run: |
+          Push-Location ${{ env.PACKAGE_FOLDER }}
+          windeployqt `
+            -no-network `
+            --no-translations `
+            --no-opengl-sw `
+            --no-system-d3d-compiler `
+            --no-svg `
+            --skip-plugin-types generic `
+            ${{ env.EXE_NAME }}
+          Pop-Location
+        shell: pwsh
+
+      - name: Package into zip
+        id: zip
+        run: |
+          $zipFileName = "MkfViewer_Qt${{ github.event.inputs.qt_version }}_${{ github.event.inputs.build_tag }}.zip"
+          Compress-Archive -Path ${{ env.PACKAGE_FOLDER }} -DestinationPath $zipFileName
+          Write-Output "zip_file=$zipFileName" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.build_tag }}
+          files: ${{ steps.zip.outputs.zip_file }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
