@@ -118,4 +118,4 @@ jobs:
           tag_name: ${{ github.event.inputs.build_tag }}
           files: ${{ steps.zip.outputs.zip_file }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
