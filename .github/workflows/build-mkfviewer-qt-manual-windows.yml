@@ -59,6 +59,8 @@ jobs:
         if: steps.cache-qt.outputs.cache-hit != 'true'
         run: |
           pip install aqtinstall==3.3.0
+          aqt list-qt windows desktop
+          aqt list-tool windows desktop
           aqt install-qt windows desktop ${{ github.event.inputs.qt_version }} win64_mingw -O ${{ env.QT_BASEDIR }}
           aqt install-tool windows desktop ${{ github.event.inputs.mingw_aqt_id }} -O ${{ env.QT_BASEDIR }}
         shell: pwsh
