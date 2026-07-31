@@ -25,6 +25,9 @@ on:
         required: true
         default: tools_mingw1310
 
+permissions:
+  contents: write
+
 env:
   QT_BASEDIR: ${{ github.workspace }}\Qt
   QT_PREFIX: ${{ github.workspace }}\Qt\${{ github.event.inputs.qt_version }}\${{ github.event.inputs.qt_arch }}
