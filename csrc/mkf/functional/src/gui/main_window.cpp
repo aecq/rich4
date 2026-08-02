@@ -179,7 +179,7 @@ void MainWindow::playAudio() {
         if (!file.exists()) {
             resourceModel->exportBinary(row, filepath);
         }
-        ma_engine_play_sound(&engine, filepath.toStdString().c_str(), NULL);
+        ma_engine_play_sound(&engine, filepath.toLocal8Bit().constData(), NULL);
         statusBar()->showMessage("Playing audio at index:" + QString::number(row));
     } else {
         statusBar()->showMessage("Please select an audio resource.");
